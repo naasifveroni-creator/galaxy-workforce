@@ -18,9 +18,7 @@ let bots = {}; // Stores our bot objects
 const botRadius = 15;
 
 // --- Phaser Scene ---
-function preload() {
-    // We aren't loading any images yet, just using colored circles for now
-}
+function preload() {}
 
 function create() {
     // 1. Draw the Grid
@@ -59,20 +57,19 @@ function connectWebSocket() {
     ws = new WebSocket(WS_URL);
 
     ws.onopen = () => {
-        document.getElementById('connection-status').innerHTML = '🟢 connected';
-        document.getElementById('connection-status').style.color = '#2ecc71';
+        const el = document.getElementById('connection-status');
+        if(el) el.innerHTML = '🟢 connected';
     };
 
     ws.onclose = () => {
-        document.getElementById('connection-status').innerHTML = '🔴 disconnected';
-        document.getElementById('connection-status').style.color = '#ff4d4d';
+        const el = document.getElementById('connection-status');
+        if(el) el.innerHTML = '🔴 disconnected';
     };
 
     ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
         
         if (data.type === 'SNAPSHOT') {
-            // Initial state load
             data.bots.forEach(botData => applyBotStatus.call(this, botData));
         } 
         else if (data.type === 'BOT_STATUS') {
@@ -89,9 +86,13 @@ function applyBotStatus(data) {
     let bot = bots[data.bot_id];
     const targetRoom = ROOMS[data.location] || ROOMS['bridge'];
 
-    // Calculate exact center of the room
-    const targetX = (targetRoom.col * TILE) + (targetRoom.w * TILE / 2);
-    const targetY = (targetRoom.row * TILE) + (targetRoom.h * TILE / 2);
+    // Add a slight offset so bots don't stack perfectly on top of each other
+    const offsetX = BOT_OFFSETS[data.bot_id] ? BOT_OFFSETS[data.bot_id][0] : 0;
+    const offsetY = BOT_OFFSETS[data.bot_id] ? BOT_OFFSETS[data.bot_id][1] : 0;
+
+    // Calculate exact center of the room + offset
+    const targetX = (targetRoom.col * TILE) + (targetRoom.w * TILE / 2) + offsetX;
+    const targetY = (targetRoom.row * TILE) + (targetRoom.h * TILE / 2) + offsetY;
 
     // 1. Create bot if it doesn't exist
     if (!bot) {
@@ -122,7 +123,7 @@ function applyBotStatus(data) {
         bot.sprite.setData('targetY', targetY);
 
         // Stop any existing tweens so they don't conflict
-        this.tweens.killTweensOf(bot.sprite);
+        this.tweens.killTweensOf([bot.sprite, bot.label, bot.statusLabel]);
 
         // Walk to the new room
         this.tweens.add({
@@ -161,8 +162,8 @@ function applyBotStatus(data) {
 // --- HUD / Approval Logic ---
 function showApprovalCard(data) {
     const container = document.getElementById('approval-container');
-    
-    // Format the preview data nicely
+    if(!container) return;
+
     let previewText = "";
     if (data.preview) {
         previewText = JSON.stringify(data.preview, null, 2);
@@ -192,7 +193,6 @@ function sendApproval(botId, isApproved) {
             approved: isApproved
         }));
         
-        // Remove the card from the UI
         const card = document.getElementById(`card-${botId}`);
         if (card) card.remove();
     }
