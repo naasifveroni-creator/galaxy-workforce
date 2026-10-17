@@ -174,7 +174,7 @@ const OfficeMachinery = ({ position }) => {
   );
 };
 
-// --- ROOM COMPONENT (Now with cleaner text) ---
+// --- ROOM COMPONENT ---
 const Room = ({ position, size, color, label, children }) => {
   const [width, , depth] = size;
   const wallHeight = 0.8;
@@ -202,8 +202,8 @@ const Room = ({ position, size, color, label, children }) => {
         <meshBasicMaterial color="#00f0ff" transparent opacity={0.2} />
       </mesh>
       
-      {/* Main Room Label - Tucked away inside the room corner */}
-      <Text position={[-width/2 + 0.2, 0.1, -depth/2 + 0.3]} rotation={[-Math.PI / 2, 0, 0]} color="#00f0ff" fontSize={0.4} font="https://fonts.gstatic.com/s/orbitron/v25/yMJRMIlzdpvBhQQL_Qq7dys.woff">
+      {/* Floor text marker */}
+      <Text position={[-width/2 + 0.2, 0.1, -depth/2 + 0.3]} rotation={[-Math.PI / 2, 0, 0]} color="#00f0ff" fontSize={0.3} font="https://fonts.gstatic.com/s/orbitron/v25/yMJRMIlzdpvBhQQL_Qq7dys.woff">
         {label.toUpperCase()}
       </Text>
       
