@@ -135,78 +135,137 @@ new Phaser.Game({
     create() {
       scene = this;
 
-      // 1. Starfield Background
+      // 1. Deep Space Background
       const stars = this.add.graphics();
-      for (let i = 0; i < 150; i++) {
+      for (let i = 0; i < 200; i++) {
         stars.fillStyle(0xffffff, Math.random() * 0.8 + 0.2);
         stars.fillCircle(Math.random() * 960, Math.random() * 640, Math.random() * 1.5);
       }
 
-      // 2. Ship Floor Grid (Corridors)
-      const g = this.add.graphics().lineStyle(1, 0x1a2b4c, 0.8);
+      // 2. Metal Floor Grid (Ship Hull)
+      const g = this.add.graphics().lineStyle(1, 0x1a2b4c, 0.5);
       for (let x = 0; x <= 12; x++) g.lineBetween(x * TILE, 0, x * TILE, 8 * TILE);
       for (let y = 0; y <= 8; y++)  g.lineBetween(0, y * TILE, 12 * TILE, y * TILE);
 
-      // 3. Draw Detailed Rooms
-      
-      // --- BRIDGE (HQ) ---
+      // ---------------------------------------------------------
+      // ROOM 1: THE BRIDGE (Command Center)
+      // ---------------------------------------------------------
       const bridge = ROOMS['bridge'];
       const bx = bridge.col * TILE;
       const by = bridge.row * TILE;
-      // Floor
-      this.add.rectangle(bx, by, bridge.w * TILE, bridge.h * TILE, 0x1e293b, 0.9).setOrigin(0);
-      // Command Console
-      this.add.rectangle(bx + 40, by + 40, 160, 60, 0x334155).setOrigin(0);
-      this.add.rectangle(bx + 50, by + 50, 140, 40, 0x0f172a).setOrigin(0);
-      // Hologram
-      const holo = this.add.circle(bx + 120, by + 30, 15, 0x4da6ff, 0.4);
-      this.tweens.add({ targets: holo, alpha: 0.8, scale: 1.2, yoyo: true, repeat: -1, duration: 1500 });
-      this.add.text(bx + 10, by + 10, "BRIDGE (HQ)", { fontSize: "12px", color: "#4da6ff", fontWeight: "bold" });
+      const bw = bridge.w * TILE;
+      const bh = bridge.h * TILE;
 
-      // --- COMMS ARRAY ---
+      // Room Shadow & Floor
+      this.add.rectangle(bx + 4, by + 4, bw, bh, 0x000000, 0.5).setOrigin(0);
+      this.add.rectangle(bx, by, bw, bh, 0x1e293b, 0.95).setOrigin(0);
+      
+      // Raised Command Platform
+      this.add.rectangle(bx + 30, by + 30, bw - 60, bh - 60, 0x0f172a).setOrigin(0).setStrokeStyle(2, 0x334155);
+      
+      // Captain's Chair
+      this.add.circle(bx + bw/2, by + bh - 40, 25, 0x2c3e50);
+      this.add.circle(bx + bw/2, by + bh - 40, 15, 0x1e293b);
+      
+      // Holo-Map Table
+      this.add.rectangle(bx + 40, by + 40, 100, 50, 0x1e293b).setOrigin(0).setStrokeStyle(1, 0x4da6ff);
+      const holo = this.add.rectangle(bx + 50, by + 50, 80, 30, 0x4da6ff, 0.2).setOrigin(0);
+      this.tweens.add({ targets: holo, alpha: 0.6, yoyo: true, repeat: -1, duration: 1000 });
+      
+      this.add.text(bx + 10, by + 10, "BRIDGE (HQ)", { fontSize: "12px", color: "#4da6ff", fontWeight: "bold", stroke: "#000", strokeThickness: 2 });
+
+      // ---------------------------------------------------------
+      // ROOM 2: COMMS ARRAY (Server & Antenna Room)
+      // ---------------------------------------------------------
       const comms = ROOMS['comms_array'];
       const cx = comms.col * TILE;
       const cy = comms.row * TILE;
-      this.add.rectangle(cx, cy, comms.w * TILE, comms.h * TILE, 0x451a1a, 0.9).setOrigin(0);
-      // Server Racks
-      for(let i=0; i<3; i++) {
-        this.add.rectangle(cx + 30 + (i*50), cy + 50, 40, 100, 0x1c0c0c).setOrigin(0).setStrokeStyle(1, 0x7b241c);
-        // Blinking lights
-        for(let j=0; j<4; j++) {
-          const light = this.add.circle(cx + 45 + (i*50), cy + 65 + (j*20), 3, 0xff4d4d);
-          this.tweens.add({ targets: light, alpha: 0, yoyo: true, repeat: -1, duration: 500 + Math.random() * 500 });
-        }
-      }
-      this.add.text(cx + 10, cy + 10, "COMMS ARRAY", { fontSize: "12px", color: "#ff4d4d", fontWeight: "bold" });
+      const cw = comms.w * TILE;
+      const ch = comms.h * TILE;
 
-      // --- DATA FORGE ---
+      this.add.rectangle(cx + 4, cy + 4, cw, ch, 0x000000, 0.5).setOrigin(0);
+      this.add.rectangle(cx, cy, cw, ch, 0x451a1a, 0.95).setOrigin(0);
+      
+      // Wall of Server Racks
+      for (let i = 0; i < 4; i++) {
+        this.add.rectangle(cx + 20, cy + 40 + (i * 35), 80, 30, 0x1c0c0c).setOrigin(0).setStrokeStyle(1, 0x7b241c);
+        const light = this.add.circle(cx + 90, cy + 55 + (i * 35), 3, 0xff4d4d);
+        this.tweens.add({ targets: light, alpha: 0.1, yoyo: true, repeat: -1, duration: 300 + Math.random() * 500 });
+      }
+
+      // Satellite Uplink Dish
+      this.add.circle(cx + cw - 60, cy + 60, 40, 0x1a1a1a).setStrokeStyle(3, 0x555555);
+      this.add.circle(cx + cw - 60, cy + 60, 30, 0x2a2a2a);
+      this.add.line(cx + cw - 60, cy + 60, 0, 0, 0, -40, 0x888888).setLineWidth(2);
+      
+      this.add.text(cx + 10, cy + 10, "COMMS ARRAY", { fontSize: "12px", color: "#ff4d4d", fontWeight: "bold", stroke: "#000", strokeThickness: 2 });
+
+      // ---------------------------------------------------------
+      // ROOM 3: DATA FORGE (Data Core Room)
+      // ---------------------------------------------------------
       const data = ROOMS['data_forge'];
       const dx = data.col * TILE;
       const dy = data.row * TILE;
-      this.add.rectangle(dx, dy, data.w * TILE, data.h * TILE, 0x0f3a4d, 0.9).setOrigin(0);
-      // Holographic Data Projector
-      this.add.rectangle(dx + 60, dy + 60, 180, 80, 0x1b4f72).setOrigin(0);
-      this.add.rectangle(dx + 70, dy + 70, 160, 60, 0x051420).setOrigin(0);
-      // Data lines
-      for(let i=0; i<8; i++) {
-        const line = this.add.rectangle(dx + 80, dy + 80 + (i*6), 140, 2, 0x4da6ff, 0.5).setOrigin(0);
-        this.tweens.add({ targets: line, width: Math.random() * 100 + 40, yoyo: true, repeat: -1, duration: 1000 + Math.random() * 1000 });
-      }
-      this.add.text(dx + 10, dy + 10, "DATA FORGE", { fontSize: "12px", color: "#4da6ff", fontWeight: "bold" });
+      const dw = data.w * TILE;
+      const dh = data.h * TILE;
 
-      // --- STRATEGY DECK ---
+      this.add.rectangle(dx + 4, dy + 4, dw, dh, 0x000000, 0.5).setOrigin(0);
+      this.add.rectangle(dx, dy, dw, dh, 0x0f3a4d, 0.95).setOrigin(0);
+
+      // Central Data Core
+      this.add.circle(dx + dw/2, dy + dh/2, 50, 0x0a2533).setStrokeStyle(2, 0x1b4f72);
+      this.add.circle(dx + dw/2, dy + dh/2, 30, 0x4da6ff, 0.2);
+      this.add.circle(dx + dw/2, dy + dh/2, 15, 0x87ceeb, 0.5);
+      
+      // Rotating Data Rings
+      const ring1 = this.add.circle(dx + dw/2, dy + dh/2, 40, 0x000000, 0).setStrokeStyle(1, 0x4da6ff, 0.6);
+      this.tweens.add({ targets: ring1, angle: 360, repeat: -1, duration: 4000 });
+      const ring2 = this.add.circle(dx + dw/2, dy + dh/2, 60, 0x000000, 0).setStrokeStyle(1, 0x4da6ff, 0.3);
+      this.tweens.add({ targets: ring2, angle: -360, repeat: -1, duration: 6000 });
+
+      // Server Pylons
+      this.add.rectangle(dx + 20, dy + 20, 30, 30, 0x051420).setOrigin(0).setStrokeStyle(1, 0x1b4f72);
+      this.add.rectangle(dx + dw - 50, dy + 20, 30, 30, 0x051420).setOrigin(0).setStrokeStyle(1, 0x1b4f72);
+      this.add.rectangle(dx + 20, dy + dh - 50, 30, 30, 0x051420).setOrigin(0).setStrokeStyle(1, 0x1b4f72);
+      this.add.rectangle(dx + dw - 50, dy + dh - 50, 30, 30, 0x051420).setOrigin(0).setStrokeStyle(1, 0x1b4f72);
+
+      this.add.text(dx + 10, dy + 10, "DATA FORGE", { fontSize: "12px", color: "#4da6ff", fontWeight: "bold", stroke: "#000", strokeThickness: 2 });
+
+      // ---------------------------------------------------------
+      // ROOM 4: STRATEGY DECK (War Room)
+      // ---------------------------------------------------------
       const strat = ROOMS['strategy_deck'];
       const sx = strat.col * TILE;
       const sy = strat.row * TILE;
-      this.add.rectangle(sx, sy, strat.w * TILE, strat.h * TILE, 0x1a3d1a, 0.9).setOrigin(0);
-      // War Table
-      this.add.ellipse(sx + 150, sy + 120, 200, 100, 0x0f2410).setStrokeStyle(2, 0x2ecc71);
-      this.add.circle(sx + 150, sy + 120, 30, 0x2ecc71, 0.3);
-      this.add.text(sx + 10, sy + 10, "STRATEGY DECK", { fontSize: "12px", color: "#2ecc71", fontWeight: "bold" });
+      const sw = strat.w * TILE;
+      const sh = strat.h * TILE;
 
+      this.add.rectangle(sx + 4, sy + 4, sw, sh, 0x000000, 0.5).setOrigin(0);
+      this.add.rectangle(sx, sy, sw, sh, 0x1a3d1a, 0.95).setOrigin(0);
+
+      // Central War Table
+      this.add.ellipse(sx + sw/2, sy + sh/2, 160, 100, 0x0f2410).setStrokeStyle(2, 0x2ecc71);
+      this.add.ellipse(sx + sw/2, sy + sh/2, 140, 80, 0x000000, 0.5);
+      
+      // Holographic Board
+      const holoBoard = this.add.rectangle(sx + sw/2, sy + sh/2, 100, 50, 0x2ecc71, 0.1);
+      this.tweens.add({ targets: holoBoard, alpha: 0.4, yoyo: true, repeat: -1, duration: 1500 });
+
+      // Surrounding Consoles
+      for (let i = 0; i < 4; i++) {
+        const angle = (i * 90) * (Math.PI / 180);
+        const ox = Math.cos(angle) * 110;
+        const oy = Math.sin(angle) * 70;
+        this.add.rectangle(sx + sw/2 + ox - 15, sy + sh/2 + oy - 10, 30, 20, 0x0f2410).setOrigin(0).setStrokeStyle(1, 0x2ecc71);
+      }
+
+      this.add.text(sx + 10, sy + 10, "STRATEGY DECK", { fontSize: "12px", color: "#2ecc71", fontWeight: "bold", stroke: "#000", strokeThickness: 2 });
+
+      // ---------------------------------------------------------
       // 4. Add the Commander Avatar
-      const startX = bx + (bridge.w * TILE / 2);
-      const startY = by + (bridge.h * TILE / 2);
+      // ---------------------------------------------------------
+      const startX = bx + (bw / 2);
+      const startY = by + (bh / 2);
       
       this.commander = this.add.sprite(startX, startY, 'commander', 4).setDepth(20).setScale(1.2);
       
