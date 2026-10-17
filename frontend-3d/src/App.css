@@ -2,6 +2,8 @@
 
 * {
   box-sizing: border-box !important;
+  margin: 0;
+  padding: 0;
 }
 
 body {
@@ -13,46 +15,83 @@ body {
 }
 
 .app-container {
-  display: flex;
   width: 100vw;
   height: 100vh;
+  position: relative;
   overflow: hidden;
 }
 
+/* THE 3D CANVAS TAKES UP THE ENTIRE SCREEN */
 .canvas-container {
-  flex: 1;
-  position: relative;
-  min-width: 0;
+  width: 100vw;
+  height: 100vh;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
 }
 
-/* HUD PANEL - LOCKED TO 280PX */
+.canvas-container::after {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* THE HUD IS FIXED TO THE RIGHT AND CANNOT BE PUSHED OFF */
 .hud-panel {
-  width: 280px !important;
-  min-width: 280px !important;
-  max-width: 280px !important;
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  width: 300px;
   background: #060a12;
   border-left: 2px solid rgba(0, 240, 255, 0.2);
-  display: flex;
-  flex-direction: column;
   z-index: 100;
-  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
-  transition: width 0.3s ease, min-width 0.3s ease;
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.8);
+  transition: transform 0.3s ease;
   overflow: hidden;
 }
 
+/* WHEN COLLAPSED, SLIDE IT OFF THE SCREEN */
 .hud-panel.collapsed {
-  width: 0px !important;
-  min-width: 0px !important;
-  border: none;
+  transform: translateX(100%);
 }
 
+/* THE TOGGLE BUTTON SITS ON THE LEFT EDGE OF THE PANEL */
+.hud-toggle-btn {
+  position: absolute;
+  top: 50%;
+  left: -24px;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 60px;
+  background: #060a12;
+  border: 2px solid rgba(0, 240, 255, 0.5);
+  border-right: none;
+  color: #00f0ff;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  z-index: 101;
+}
+.hud-toggle-btn:hover { background: #00f0ff; color: #000; }
+
+/* CONTENT INSIDE THE PANEL */
 .hud-content {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
   height: 100%;
-  padding: 10px;
+  padding: 15px;
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -62,42 +101,34 @@ body {
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid rgba(0, 240, 255, 0.2);
-  padding-bottom: 8px;
+  padding-bottom: 10px;
   width: 100%;
 }
 
 .logo-text {
   font-family: 'Orbitron', sans-serif;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 900;
   color: #00f0ff;
   white-space: nowrap;
 }
 
-.hud-toggle-btn {
-  background: transparent;
-  border: 1px solid #00f0ff;
-  color: #00f0ff;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
+.status-badge {
+  background: rgba(46, 204, 113, 0.2);
+  border: 1px solid #2ecc71;
+  color: #2ecc71;
   padding: 2px 6px;
-}
-
-h4 {
-  margin: 0 0 6px 0;
-  font-family: 'Share Tech Mono', monospace;
-  color: #8892b0;
+  border-radius: 4px;
   font-size: 9px;
-  text-transform: uppercase;
-  white-space: nowrap;
+  font-weight: bold;
+  font-family: 'Share Tech Mono', monospace;
 }
 
 .profile-card {
   background: rgba(0, 240, 255, 0.05);
   border: 1px solid rgba(0, 240, 255, 0.3);
   border-radius: 4px;
-  padding: 8px;
+  padding: 10px;
   width: 100%;
 }
 
@@ -105,7 +136,7 @@ h4 {
   background: #000;
   height: 4px;
   border-radius: 2px;
-  margin-top: 6px;
+  margin-top: 8px;
   width: 100%;
   overflow: hidden;
 }
@@ -116,18 +147,26 @@ h4 {
   box-shadow: 0 0 10px #00f0ff;
 }
 
-/* TELEMETRY GRID */
+h4 {
+  margin: 0 0 8px 0;
+  font-family: 'Share Tech Mono', monospace;
+  color: #8892b0;
+  font-size: 10px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
 .telemetry-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 4px;
+  gap: 6px;
   width: 100%;
 }
 
 .telemetry-box {
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 6px;
+  padding: 8px;
   border-radius: 4px;
   width: 100%;
   overflow: hidden;
@@ -135,47 +174,44 @@ h4 {
 
 .telem-label {
   font-family: 'Share Tech Mono', monospace;
-  font-size: 7px;
+  font-size: 8px;
   color: #4a5568;
-  white-space: nowrap;
 }
 
 .telem-value {
   font-family: 'Share Tech Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   color: #00f0ff;
   margin-top: 2px;
-  white-space: nowrap;
 }
 
-/* BOT MATRIX */
 .bot-matrix {
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 4px;
-  padding: 4px;
+  padding: 6px;
   width: 100%;
 }
 
 .bot-row {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 3px 0;
+  gap: 8px;
+  padding: 4px 0;
   border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
   width: 100%;
 }
 .bot-row:last-child { border-bottom: none; }
 
 .status-indicator {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
 }
 
 .bot-name {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   text-transform: capitalize;
   flex: 1;
@@ -186,16 +222,15 @@ h4 {
 
 .bot-state {
   font-family: 'Share Tech Mono', monospace;
-  font-size: 8px;
+  font-size: 9px;
   color: #8892b0;
   flex-shrink: 0;
 }
 
-/* BUTTONS */
 .button-group {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   width: 100%;
 }
 
@@ -203,46 +238,43 @@ h4 {
   background: rgba(0, 240, 255, 0.05);
   color: #00f0ff;
   border: 1px solid rgba(0, 240, 255, 0.3);
-  padding: 6px;
+  padding: 8px;
   border-radius: 4px;
   cursor: pointer;
   font-family: 'Share Tech Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   text-align: left;
   width: 100%;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-/* APPROVALS */
 .approval-card {
   background: rgba(15, 20, 30, 0.9);
   border-left: 3px solid #f1c40f;
-  padding: 8px;
+  padding: 10px;
   border-radius: 4px;
-  margin-bottom: 6px;
-  font-size: 10px;
+  margin-bottom: 8px;
+  font-size: 11px;
   width: 100%;
 }
 
 .row {
   display: flex;
-  gap: 4px;
-  margin-top: 8px;
+  gap: 6px;
+  margin-top: 10px;
   width: 100%;
 }
 
 .approve, .reject {
   flex: 1;
   text-align: center;
-  padding: 4px;
-  font-size: 9px;
+  padding: 6px;
+  font-size: 10px;
 }
 .approve { background: rgba(46, 204, 113, 0.1); border: 1px solid #2ecc71; color: #2ecc71; }
 .reject { background: rgba(231, 76, 60, 0.1); border: 1px solid #e74c3c; color: #e74c3c; }
 
-/* MINIMAP (Keep as is) */
 .minimap-container { position: absolute; bottom: 20px; left: 20px; background: rgba(2, 4, 10, 0.85); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 8px; z-index: 50; }
 .minimap-container.expanded { width: 180px; height: 200px; padding: 10px; }
 .minimap-container.minimized { width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center; }
@@ -259,7 +291,6 @@ h4 {
 .map-dot { position: absolute; width: 6px; height: 6px; border-radius: 50%; transform: translate(-50%, -50%); }
 .commander-dot { background-color: #f1c40f; box-shadow: 0 0 8px #f1c40f; z-index: 10; width: 8px; height: 8px; }
 
-/* MODAL */
 .room-modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(2, 4, 10, 0.8); display: flex; justify-content: center; align-items: center; z-index: 1000; }
 .room-modal { background: #0a0f1e; border: 2px solid #00f0ff; border-radius: 8px; padding: 30px; width: 500px; color: #fff; }
 .room-modal h2 { font-family: 'Orbitron', sans-serif; color: #00f0ff; margin-top: 0; }

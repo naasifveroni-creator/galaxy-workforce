@@ -628,18 +628,18 @@ export default function App() {
         <Minimap bots={bots} commanderPos={commanderPos} />
       </div>
 
-      {/* --- HUD PANEL WITH TOGGLE --- */}
+      {/* HUD OVERLAY */}
       <div className={`hud-panel ${isHudExpanded ? 'expanded' : 'collapsed'}`}>
+        <button className="hud-toggle-btn" onClick={() => setIsHudExpanded(!isHudExpanded)}>
+          {isHudExpanded ? '▶' : '◀'}
+        </button>
+
         <div className="hud-content">
-          {/* SYSTEM HEADER WITH TOGGLE BUTTON */}
           <div className="system-header">
             <div className="logo-text">GALAXY WORKFORCE</div>
-            <button className="hud-toggle-btn" onClick={() => setIsHudExpanded(!isHudExpanded)}>
-              {isHudExpanded ? '▶' : '◀'}
-            </button>
+            <div className="status-badge">ONLINE</div>
           </div>
 
-          {/* COMMANDER PROFILE */}
           <div className="profile-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
@@ -653,7 +653,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* TELEMETRY GRID */}
           <div>
             <h4>System Telemetry</h4>
             <div className="telemetry-grid">
@@ -676,7 +675,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* BOT STATUS MATRIX */}
           <div>
             <h4>Agent Status</h4>
             <div className="bot-matrix">
@@ -693,7 +691,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* DISPATCH CONTROLS */}
           <div>
             <h4>Dispatch Controls</h4>
             <div className="button-group">
@@ -709,7 +706,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* APPROVALS */}
           <div style={{ flex: 1, overflowY: 'auto' }}>
             <h4>Pending Approvals</h4>
             {approvals.length === 0 ? (
