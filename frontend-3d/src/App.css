@@ -31,9 +31,12 @@ body {
   z-index: 10;
 }
 
-/* HUD PANEL */
+/* HUD PANEL - FIXED WIDTH */
 .hud-panel {
   width: 320px;
+  min-width: 320px;
+  max-width: 320px;
+  flex-shrink: 0;
   background: #060a12;
   border-left: 2px solid rgba(0, 240, 255, 0.2);
   padding: 15px;
@@ -42,6 +45,9 @@ body {
   gap: 15px;
   z-index: 100;
   box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+  box-sizing: border-box;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* System Header */
@@ -109,6 +115,7 @@ h4 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 6px;
+  width: 100%;
 }
 
 .telemetry-box {
@@ -118,6 +125,7 @@ h4 {
   border-radius: 4px;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 }
 
 .telem-label {
@@ -139,6 +147,8 @@ h4 {
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 4px;
   padding: 6px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .bot-row {
@@ -147,6 +157,8 @@ h4 {
   gap: 8px;
   padding: 4px 0;
   border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+  width: 100%;
+  box-sizing: border-box;
 }
 .bot-row:last-child { border-bottom: none; }
 
@@ -154,6 +166,7 @@ h4 {
   width: 8px;
   height: 8px;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .status-indicator.idle { background: #4a5568; }
@@ -172,6 +185,9 @@ h4 {
   font-weight: 600;
   text-transform: capitalize;
   flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .bot-state {
@@ -179,6 +195,7 @@ h4 {
   font-size: 10px;
   color: #8892b0;
   text-transform: uppercase;
+  flex-shrink: 0;
 }
 
 /* Buttons */
@@ -186,6 +203,7 @@ h4 {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  width: 100%;
 }
 
 button {
@@ -199,6 +217,7 @@ button {
   font-size: 12px;
   transition: all 0.2s;
   text-align: left;
+  box-sizing: border-box;
 }
 
 button:hover {
@@ -215,6 +234,7 @@ button:hover {
   border-radius: 4px;
   margin-bottom: 8px;
   font-size: 12px;
+  box-sizing: border-box;
 }
 
 .row {
