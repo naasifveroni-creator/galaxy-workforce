@@ -631,10 +631,12 @@ export default function App() {
       {/* --- HUD PANEL WITH TOGGLE --- */}
       <div className={`hud-panel ${isHudExpanded ? 'expanded' : 'collapsed'}`}>
         <div className="hud-content">
-          {/* SYSTEM HEADER */}
+          {/* SYSTEM HEADER WITH TOGGLE BUTTON */}
           <div className="system-header">
             <div className="logo-text">GALAXY WORKFORCE</div>
-            <div className="status-badge">ONLINE</div>
+            <button className="hud-toggle-btn" onClick={() => setIsHudExpanded(!isHudExpanded)}>
+              {isHudExpanded ? '▶' : '◀'}
+            </button>
           </div>
 
           {/* COMMANDER PROFILE */}
@@ -727,17 +729,6 @@ export default function App() {
           </div>
         </div>
       </div>
-
-      {/* THE TOGGLE BUTTON IS NOW OUTSIDE THE PANEL AND FIXED TO THE SCREEN */}
-      <button 
-        className="hud-toggle" 
-        onClick={() => setIsHudExpanded(!isHudExpanded)}
-        style={{
-          right: isHudExpanded ? '320px' : '0px',
-        }}
-      >
-        {isHudExpanded ? '▶' : '◀'}
-      </button>
 
       {openRoom && (
         <div className="room-modal-overlay" onClick={() => setOpenRoom(null)}>
