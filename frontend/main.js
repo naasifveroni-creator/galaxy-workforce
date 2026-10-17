@@ -65,25 +65,43 @@ const roomCenter = (id, botId) => {
   return { x: (r.col + r.w / 2) * TILE + ox, y: (r.row + r.h / 2) * TILE + oy };
 };
 
+const BOT_COLORS = {
+  email_bot: 0xff0000, // Red
+  data_bot:  0xffff00, // Yellow
+  excel_bot: 0x0000ff, // Blue
+  report_bot:0x00ff00  // Green
+};
+
 function ensureBot(b) {
   addControl(b);
   if (bots[b.bot_id]) return;
   const p = roomCenter(b.location || "bridge", b.bot_id);
   
-  // 1. Create the sprite instead of a circle
-  const sprite = scene.add.sprite(p.x, p.y, "crew").setDepth(10).setScale(0.8);
+  // 1. Create the sprite
+  const container = scene.add.container(p.x, p.y).setDepth(10);
+  const g = scene.add.graphics();
+  const color = BOT_COLORS[b.bot_id] || 0xffffff;
   
-  // 2. Tint the sprite with the bot's specific color
-  const color = Phaser.Display.Color.HexStringToColor(b.color).color;
-  sprite.setTint(color);
-  
-  // 3. Play the idle animation
-  sprite.play("idle");
+  // 2. Draw the Among Us character
+  g.fillStyle(color, 1);
+  g.fillRoundedRect(-12, -16, 24, 32, 8);
+  g.fillRoundedRect(-18, -6, 10, 18, 4);
+  g.fillStyle(0x87ceeb, 1);
+  g.fillRoundedRect(2, -10, 14, 8, 4);
+  g.lineStyle(2, 0x333333, 1);
+  g.strokeRoundedRect(2, -10, 14, 8, 4);
+  g.fillStyle(0x000000, 0.5);
+  g.fillRect(-8, 12, 6, 6);
+  g.fillRect(2, 12, 6, 6);
+  container.add(g);
+
+  // 3. Play the idle animation (We skip this for the drawn version, as the drawing is static)
+  // sprite.play("idle");
 
   const label = scene.add.text(p.x, p.y - 35, b.name, { fontSize: "12px", color: "#fff", fontWeight: "bold", stroke: "#000", strokeThickness: 3 }).setOrigin(0.5).setDepth(11);
   const statusText = scene.add.text(p.x, p.y + 30, "", { fontSize: "11px", color: "#9fb3ff", stroke: "#000", strokeThickness: 2 }).setOrigin(0.5).setDepth(11);
   
-  bots[b.bot_id] = { sprite, label, statusText };
+  bots[b.bot_id] = { sprite: container, label, statusText };
 }
 
 function applyBotStatus(msg, instant = false) {
@@ -95,15 +113,11 @@ function applyBotStatus(msg, instant = false) {
     const dist = Phaser.Math.Distance.Between(bot.sprite.x, bot.sprite.y, t.x, t.y);
     
     if (dist > 2) {
-      // Flip the sprite based on walking direction
-      if (t.x < bot.sprite.x) {
-        bot.sprite.setFlipX(true);
-      } else {
-        bot.sprite.setFlipX(false);
-      }
-      
-      // Play walking animation
-      bot.sprite.play("walk", true);
+      // Flipping doesn't work on containers, so we skip it
+      // bot.sprite.setFlipX(...)
+
+      // Play walking animation (Skipped because we don't have an animation)
+      // bot.sprite.play("walk", true);
 
       const targets = [bot.sprite, bot.label, bot.statusText];
       targets.forEach((o, i) => scene.tweens.add({
@@ -112,16 +126,15 @@ function applyBotStatus(msg, instant = false) {
         ease: "Sine.easeInOut",
         onComplete: () => {
           // Return to idle when they stop moving
-          bot.sprite.play("idle", true);
-          bot.sprite.setFlipX(false);
+          // bot.sprite.play("idle", true);
         }
       }));
     }
   }
 
-  if (bot.pulse) { bot.pulse.stop(); bot.pulse = null; bot.sprite.setScale(0.8); }
+  if (bot.pulse) { bot.pulse.stop(); bot.pulse = null; bot.sprite.setScale(1); }
   if (msg.status === "awaiting_approval") {
-    bot.pulse = scene.tweens.add({ targets: bot.sprite, scale: 0.9, yoyo: true, repeat: -1, duration: 500 });
+    bot.pulse = scene.tweens.add({ targets: bot.sprite, scale: 1.2, yoyo: true, repeat: -1, duration: 500 });
   }
 }
 
@@ -134,15 +147,13 @@ new Phaser.Game({
   scene: {
     preload() {
       // We use a public URL so you don't have to download anything!
-      // This loads a simple 2D Among Us style sprite sheet.
-      this.load.spritesheet('crew', 'https://raw.githubusercontent.com/photonstorm/phaser3-examples/master/public/assets/sprites/ufo.png', { frameWidth: 32, frameHeight: 32 });
-      
-      // NOTE: Since the UFO image doesn't have walk animations, we will just spin it slightly for the "walk" animation to simulate movement. 
+      // this.load.spritesheet('crew', 'https://cdn.jsdelivr.net/gh/photonstorm/phaser3-examples@master/public/assets/sprites/ufo.png', { frameWidth: 32, frameHeight: 32 });
     },
     create() {
       scene = this;
 
-      // Create Animations
+      // Create Animations (Skipped because we are drawing the characters)
+      /*
       this.anims.create({
         key: 'idle',
         frames: [{ key: 'crew', frame: 0 }],
@@ -155,6 +166,7 @@ new Phaser.Game({
         frameRate: 10,
         repeat: -1
       });
+      */
 
       const g = this.add.graphics().lineStyle(1, 0x121a33);
       for (let x = 0; x <= 12; x++) g.lineBetween(x * TILE, 0, x * TILE, 8 * TILE);
