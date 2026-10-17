@@ -8,13 +8,7 @@ import './App.css';
 const WS_URL = "wss://orange-system-g4w4gq7r9gxxcw7q-8000.app.github.dev/ws";
 
 const ROOM_COLORS = {
-  bridge: '#1e293b', 
-  comms_array: '#451a1a', 
-  data_forge: '#0f3a4d', 
-  strategy_deck: '#1a3d1a', 
-  office: '#3b2b4d',
-  hangar_bay: '#2c3e50',
-  medbay: '#4a235a'
+  bridge: '#1e293b', comms_array: '#451a1a', data_forge: '#0f3a4d', strategy_deck: '#1a3d1a', office: '#3b2b4d', hangar_bay: '#2c3e50', medbay: '#4a235a'
 };
 
 const BOT_COLORS = {
@@ -258,25 +252,17 @@ const OfficeMachinery = ({ position }) => {
   );
 };
 
-// --- NEW: HANGAR BAY MACHINERY ---
 const HangarMachinery = ({ position }) => {
   const shipRef = useRef();
   useFrame((state) => {
-    // Hover the ship up and down
-    if (shipRef.current) {
-      shipRef.current.position.y = 0.5 + Math.sin(state.clock.elapsedTime * 2) * 0.2;
-    }
+    if (shipRef.current) shipRef.current.position.y = 0.5 + Math.sin(state.clock.elapsedTime * 2) * 0.2;
   });
-  
   return (
     <group position={position}>
-      {/* Landing Pad */}
       <mesh position={[0, -0.1, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[1.5, 1.8, 32]} />
         <meshBasicMaterial color="#00f0ff" transparent opacity={0.5} side={THREE.DoubleSide} />
       </mesh>
-      
-      {/* Hovering Ship */}
       <group ref={shipRef} position={[0, 0.5, 0]}>
         <mesh>
           <coneGeometry args={[0.6, 2, 4]} rotation={[Math.PI/2, 0, 0]} />
@@ -287,7 +273,6 @@ const HangarMachinery = ({ position }) => {
           <meshStandardMaterial color="#00f0ff" emissive="#00f0ff" emissiveIntensity={2} />
         </mesh>
       </group>
-      
       <pointLight color="#00f0ff" intensity={2} distance={5} position={[0, 1, 0]} />
       <SecurityCamera position={[2.5, 1.5, -2]} />
       <FloatingStatBar position={[0, 2.5, 0]} label="HANGAR STATUS" color="#00f0ff" width={2} />
@@ -295,25 +280,19 @@ const HangarMachinery = ({ position }) => {
   );
 };
 
-// --- NEW: MEDBAY MACHINERY ---
 const MedbayMachinery = ({ position }) => {
   const scanRef = useRef();
   useFrame((state) => {
-    // Rotating Medical Scanner
     if (scanRef.current) {
       scanRef.current.rotation.y += 0.02;
       scanRef.current.position.y = 0.5 + Math.sin(state.clock.elapsedTime * 3) * 0.1;
     }
   });
-  
   return (
     <group position={position}>
-      {/* Medical Bed */}
       <RoundedBox args={[1.5, 0.2, 1]} position={[0, 0, 0]} radius={0.1}>
         <meshStandardMaterial color="#ecf0f1" metalness={0.5} roughness={0.5} />
       </RoundedBox>
-      
-      {/* Holographic Scanner */}
       <group ref={scanRef} position={[0, 0.5, 0]}>
         <mesh rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[0.6, 0.7, 32]} />
@@ -324,7 +303,6 @@ const MedbayMachinery = ({ position }) => {
           <meshBasicMaterial color="#e74c3c" />
         </mesh>
       </group>
-      
       <pointLight color="#e74c3c" intensity={2} distance={4} position={[0, 1, 0]} />
       <SecurityCamera position={[2.5, 1.5, -2]} />
       <FloatingStatBar position={[0, 2.5, 0]} label="MEDICAL BAY" color="#e74c3c" width={2} />
@@ -502,10 +480,9 @@ const Commander = ({ activeRoom, setActiveRoom, isPaused, commanderPos }) => {
     const down = (e) => {
       keys.current[e.key.toLowerCase()] = true;
       
-      // SPACEBAR SCAN ABILITY
       if (e.code === 'Space') {
         if (scanRef.current && scanTime.current <= 0) {
-          scanTime.current = 1.5; // Animation duration
+          scanTime.current = 1.5;
           scanRef.current.position.set(ref.current.position.x, 0.2, ref.current.position.z);
           scanRef.current.visible = true;
           scanRef.current.scale.set(1, 1, 1);
@@ -520,7 +497,6 @@ const Commander = ({ activeRoom, setActiveRoom, isPaused, commanderPos }) => {
   }, []);
 
   useFrame((state, delta) => {
-    // 1. Movement
     if (ref.current && !isPaused) {
       const speed = 5 * delta;
       if (keys.current['w'] || keys.current['arrowup']) ref.current.position.z -= speed;
@@ -546,7 +522,6 @@ const Commander = ({ activeRoom, setActiveRoom, isPaused, commanderPos }) => {
       if (closestRoom !== activeRoom) setActiveRoom(closestRoom);
     }
 
-    // 2. Scan Ability Animation
     if (scanTime.current > 0) {
       scanTime.current -= delta;
       if (scanRef.current) {
@@ -566,7 +541,6 @@ const Commander = ({ activeRoom, setActiveRoom, isPaused, commanderPos }) => {
       <Crewmate3D color="#f1c40f" name="COMMANDER" isCommander={true} />
       <pointLight color="#f1c40f" intensity={2} distance={4} position={[0, 0.5, 0]} />
       
-      {/* The Scanning Ring */}
       <mesh ref={scanRef} rotation={[-Math.PI / 2, 0, 0]} visible={false}>
         <ringGeometry args={[0.8, 1, 32]} />
         <meshBasicMaterial color="#00f0ff" transparent opacity={1} side={THREE.DoubleSide} />
@@ -740,7 +714,6 @@ export default function App() {
               <Commander activeRoom={activeRoom} setActiveRoom={setActiveRoom} isPaused={!!openRoom} commanderPos={commanderPos} />
             </Room>
 
-            {/* NEW ROOMS */}
             <Room position={[0, 0, -14]} size={[6, 1, 5]} color={ROOM_COLORS.hangar_bay} label="Hangar Bay">
               <HangarMachinery position={[0, 0, 0]} />
             </Room>
@@ -762,11 +735,12 @@ export default function App() {
         <Minimap bots={bots} commanderPos={commanderPos} />
       </div>
 
-      <div className={`hud-panel ${isHudExpanded ? 'expanded' : 'collapsed'}`}>
-        <button className={`hud-toggle-btn ${isHudExpanded ? '' : 'collapsed'}`} onClick={() => setIsHudExpanded(!isHudExpanded)}>
-          {isHudExpanded ? '▶' : '◀'}
-        </button>
+      {/* THE TOGGLE BUTTON IS OUTSIDE THE PANEL DIV */}
+      <button className={`hud-toggle-btn ${isHudExpanded ? '' : 'collapsed'}`} onClick={() => setIsHudExpanded(!isHudExpanded)}>
+        {isHudExpanded ? '▶' : '◀'}
+      </button>
 
+      <div className={`hud-panel ${isHudExpanded ? 'expanded' : 'collapsed'}`}>
         <div className="hud-content">
           <div className="system-header">
             <div className="logo-text">GALAXY WORKFORCE</div>

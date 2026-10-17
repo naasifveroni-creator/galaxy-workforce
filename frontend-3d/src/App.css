@@ -1,259 +1,58 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap');
 
-* {
-  box-sizing: border-box !important;
-  margin: 0;
-  padding: 0;
-}
+* { box-sizing: border-box !important; margin: 0; padding: 0; }
 
-body {
-  margin: 0;
-  background-color: #02040a;
-  color: #fff;
-  font-family: 'Rajdhani', sans-serif;
-  overflow: hidden;
-}
-
-.app-container {
-  width: 100vw;
-  height: 100vh;
-  position: relative;
-  overflow: hidden;
-}
-
-.canvas-container {
-  width: 100vw;
-  height: 100vh;
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 1;
-}
-
+body { margin: 0; background-color: #02040a; color: #fff; font-family: 'Rajdhani', sans-serif; overflow: hidden; }
+.app-container { width: 100vw; height: 100vh; position: relative; overflow: hidden; }
+.canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
 .canvas-container::after {
-  content: " ";
-  display: block;
-  position: absolute;
-  top: 0; left: 0; bottom: 0; right: 0;
+  content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
   background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
-  background-size: 100% 4px;
-  pointer-events: none;
-  z-index: 10;
+  background-size: 100% 4px; pointer-events: none; z-index: 10;
 }
 
-/* THE HUD PANEL */
 .hud-panel {
-  position: fixed;
-  top: 0;
-  right: 0;
-  height: 100vh;
-  width: 300px;
-  background: #060a12;
-  border-left: 2px solid rgba(0, 240, 255, 0.2);
-  z-index: 100;
-  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.8);
+  position: fixed; top: 0; right: 0; height: 100vh; width: 300px;
+  background: #060a12; border-left: 2px solid rgba(0, 240, 255, 0.2);
+  z-index: 100; box-shadow: -10px 0 30px rgba(0, 0, 0, 0.8);
   transition: transform 0.3s ease;
-  /* NO overflow: hidden - allows the button to be visible */
 }
+.hud-panel.collapsed { transform: translateX(100%); }
 
-.hud-panel.collapsed {
-  transform: translateX(100%);
-}
-
-/* THE TOGGLE BUTTON - PERMANENTLY FIXED TO SCREEN */
 .hud-toggle-btn {
   position: fixed;
   top: 50%;
-  right: 300px; /* Sits exactly on the left edge of the panel */
+  right: 300px;
   transform: translateY(-50%);
-  width: 30px;
-  height: 60px;
-  background: #060a12;
-  border: 2px solid #00f0ff;
-  border-right: none;
-  color: #00f0ff;
-  font-size: 14px;
-  cursor: pointer;
-  z-index: 200;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  width: 30px; height: 60px;
+  background: #060a12; border: 2px solid #00f0ff; border-right: none;
+  color: #00f0ff; font-size: 14px; cursor: pointer;
+  z-index: 200; display: flex; justify-content: center; align-items: center;
   transition: all 0.3s ease;
 }
-.hud-toggle-btn:hover {
-  background: #00f0ff;
-  color: #000;
-  box-shadow: 0 0 15px #00f0ff;
-}
-.hud-toggle-btn.collapsed {
-  right: 0px; /* Slides to the edge when panel is hidden */
-}
+.hud-toggle-btn:hover { background: #00f0ff; color: #000; box-shadow: 0 0 15px #00f0ff; }
+.hud-toggle-btn.collapsed { right: 0px; }
 
-/* CONTENT INSIDE THE HUD */
-.hud-content {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  width: 100%;
-  height: 100%;
-  padding: 15px;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-.system-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid rgba(0, 240, 255, 0.2);
-  padding-bottom: 10px;
-  width: 100%;
-}
-
-.logo-text {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 12px;
-  font-weight: 900;
-  color: #00f0ff;
-  white-space: nowrap;
-}
-
-.status-badge {
-  background: rgba(46, 204, 113, 0.2);
-  border: 1px solid #2ecc71;
-  color: #2ecc71;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 9px;
-  font-weight: bold;
-  font-family: 'Share Tech Mono', monospace;
-}
-
-.profile-card {
-  background: rgba(0, 240, 255, 0.05);
-  border: 1px solid rgba(0, 240, 255, 0.3);
-  border-radius: 4px;
-  padding: 10px;
-  width: 100%;
-}
-
-.xp-bar-container {
-  background: #000;
-  height: 4px;
-  border-radius: 2px;
-  margin-top: 8px;
-  width: 100%;
-  overflow: hidden;
-}
-
-.xp-bar {
-  height: 100%;
-  background: #00f0ff;
-  box-shadow: 0 0 10px #00f0ff;
-}
-
-h4 {
-  margin: 0 0 8px 0;
-  font-family: 'Share Tech Mono', monospace;
-  color: #8892b0;
-  font-size: 10px;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.telemetry-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  width: 100%;
-}
-
-.telemetry-box {
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 8px;
-  border-radius: 4px;
-  width: 100%;
-  overflow: hidden;
-}
-
-.telem-label {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 8px;
-  color: #4a5568;
-}
-
-.telem-value {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 11px;
-  color: #00f0ff;
-  margin-top: 2px;
-}
-
-.bot-matrix {
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-  padding: 6px;
-  width: 100%;
-}
-
-.bot-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 0;
-  border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
-  width: 100%;
-}
+.hud-content { display: flex; flex-direction: column; gap: 12px; width: 100%; height: 100%; padding: 15px; overflow-y: auto; overflow-x: hidden; }
+.system-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 240, 255, 0.2); padding-bottom: 10px; width: 100%; }
+.logo-text { font-family: 'Orbitron', sans-serif; font-size: 12px; font-weight: 900; color: #00f0ff; white-space: nowrap; }
+.status-badge { background: rgba(46, 204, 113, 0.2); border: 1px solid #2ecc71; color: #2ecc71; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: bold; font-family: 'Share Tech Mono', monospace; }
+.profile-card { background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 4px; padding: 10px; width: 100%; }
+.xp-bar-container { background: #000; height: 4px; border-radius: 2px; margin-top: 8px; width: 100%; overflow: hidden; }
+.xp-bar { height: 100%; background: #00f0ff; box-shadow: 0 0 10px #00f0ff; }
+h4 { margin: 0 0 8px 0; font-family: 'Share Tech Mono', monospace; color: #8892b0; font-size: 10px; text-transform: uppercase; white-space: nowrap; }
+.telemetry-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 100%; }
+.telemetry-box { background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); padding: 8px; border-radius: 4px; width: 100%; overflow: hidden; }
+.telem-label { font-family: 'Share Tech Mono', monospace; font-size: 8px; color: #4a5568; }
+.telem-value { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: #00f0ff; margin-top: 2px; }
+.bot-matrix { background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 4px; padding: 6px; width: 100%; }
+.bot-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px dashed rgba(255, 255, 255, 0.05); width: 100%; }
 .bot-row:last-child { border-bottom: none; }
-
-.status-indicator {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.bot-name {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: capitalize;
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.bot-state {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 9px;
-  color: #8892b0;
-  flex-shrink: 0;
-}
-
-.button-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  width: 100%;
-}
-
-.button-group button {
-  background: rgba(0, 240, 255, 0.05);
-  color: #00f0ff;
-  border: 1px solid rgba(0, 240, 255, 0.3);
-  padding: 8px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 11px;
-  text-align: left;
-  width: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-}
-
+.status-indicator { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.bot-name { font-size: 11px; font-weight: 600; text-transform: capitalize; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bot-state { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: #8892b0; flex-shrink: 0; }
+.button-group { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.button-group button { background: rgba(0, 240, 255, 0.05); color: #00f0ff; border: 1px solid rgba(0, 240, 255, 0.3); padding: 8px; border-radius: 4px; cursor: pointer; font-family: 'Share Tech Mono', monospace; font-size: 11px; text-align: left; width: 100%; white-space: nowrap; overflow: hidden; }
 .minimap-container { position: absolute; bottom: 20px; left: 20px; background: rgba(2, 4, 10, 0.85); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 8px; z-index: 50; }
 .minimap-container.expanded { width: 180px; height: 200px; padding: 10px; }
 .minimap-container.minimized { width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center; }
@@ -262,7 +61,6 @@ h4 {
 .minimap-toggle { background: none; border: none; color: #00f0ff; font-size: 16px; cursor: pointer; }
 .minimap-map { position: relative; width: 100%; height: calc(100% - 30px); border: 1px dashed rgba(0, 240, 255, 0.2); border-radius: 4px; background: rgba(0, 0, 0, 0.3); }
 .map-room { position: absolute; background: rgba(0, 240, 255, 0.1); border: 1px solid rgba(0, 240, 255, 0.3); }
-
 .map-bridge { width: 30%; height: 25%; top: 37%; left: 35%; }
 .map-comms { width: 20%; height: 20%; top: 15%; left: 15%; }
 .map-data { width: 20%; height: 20%; top: 15%; right: 15%; }
@@ -270,16 +68,13 @@ h4 {
 .map-office { width: 20%; height: 20%; bottom: 15%; right: 15%; }
 .map-hangar { width: 20%; height: 15%; top: 2%; left: 40%; }
 .map-medbay { width: 20%; height: 15%; bottom: 2%; left: 40%; }
-
 .map-dot { position: absolute; width: 6px; height: 6px; border-radius: 50%; transform: translate(-50%, -50%); }
 .commander-dot { background-color: #f1c40f; box-shadow: 0 0 8px #f1c40f; z-index: 10; width: 8px; height: 8px; }
-
 .room-modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(2, 4, 10, 0.85); display: flex; justify-content: center; align-items: center; z-index: 1000; }
 .room-modal { background: #0a0f1e; border: 2px solid #00f0ff; border-radius: 8px; padding: 30px; width: 500px; color: #fff; max-height: 80vh; overflow-y: auto; }
 .room-modal h2 { font-family: 'Orbitron', sans-serif; color: #00f0ff; margin-top: 0; }
 .terminal-data { background: rgba(0, 0, 0, 0.5); padding: 15px; border-radius: 4px; margin: 20px 0; font-family: monospace; color: #2ecc71; border-left: 3px solid #2ecc71; }
 .close-btn { background: rgba(231, 76, 60, 0.1); color: #e74c3c; border: 1px solid #e74c3c; padding: 10px; border-radius: 4px; cursor: pointer; font-family: 'Orbitron', sans-serif; width: 100%; text-align: center; }
-
 .approval-card { background: rgba(15, 20, 30, 0.9); border-left: 3px solid #f1c40f; padding: 10px; border-radius: 4px; margin-bottom: 8px; font-size: 12px; width: 100%; }
 .row { display: flex; gap: 6px; margin-top: 10px; width: 100%; }
 .approve, .reject { flex: 1; text-align: center; padding: 8px; font-size: 11px; border-radius: 4px; cursor: pointer; }
