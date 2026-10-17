@@ -49,9 +49,7 @@ const DataParticles = () => {
   );
 };
 
-// --- 3D MACHINERY ---
-
-// 1. Bridge Command Table
+// --- MACHINERY ---
 const CommandTable = ({ position }) => {
   const ref = useRef();
   useFrame((state, delta) => (ref.current.rotation.y += delta * 0.5));
@@ -73,10 +71,14 @@ const CommandTable = ({ position }) => {
   );
 };
 
-// 2. Data Forge Core
 const DataForgeCore = ({ position }) => {
   const ref = useRef();
-  useFrame((state, delta) => (ref.current.rotation.z += delta));
+  const dataRings = useRef();
+  useFrame((state, delta) => {
+    ref.current.rotation.z += delta;
+    dataRings.current.rotation.x += delta * 0.5;
+    dataRings.current.rotation.y += delta * 0.3;
+  });
   return (
     <group position={position}>
       <mesh>
@@ -87,25 +89,25 @@ const DataForgeCore = ({ position }) => {
         <torusGeometry args={[1.4, 0.05, 16, 64]} />
         <meshStandardMaterial color="#00f0ff" emissive="#00f0ff" emissiveIntensity={2} />
       </mesh>
+      <mesh ref={dataRings}>
+        <torusGeometry args={[1.0, 0.02, 16, 64]} />
+        <meshStandardMaterial color="#87ceeb" emissive="#87ceeb" emissiveIntensity={1.5} />
+      </mesh>
       <pointLight color="#00f0ff" intensity={2} distance={6} />
     </group>
   );
 };
 
-// 3. Comms Array Server Racks & Dish
 const CommsMachinery = ({ position }) => {
   const dishRef = useRef();
   useFrame((state, delta) => (dishRef.current.rotation.y += delta * 0.2));
-  
   return (
     <group position={position}>
-      {/* Server Racks */}
       {[-1.5, 0, 1.5].map((x, i) => (
         <group key={i} position={[x, 0.5, -1]}>
           <RoundedBox args={[0.8, 1.5, 0.6]} radius={0.05}>
             <meshStandardMaterial color="#111" metalness={0.8} />
           </RoundedBox>
-          {/* Blinking Lights */}
           {[-0.4, 0, 0.4].map((y, j) => (
             <mesh key={j} position={[0, y, 0.31]}>
               <sphereGeometry args={[0.05, 8, 8]} />
@@ -114,7 +116,6 @@ const CommsMachinery = ({ position }) => {
           ))}
         </group>
       ))}
-      {/* Radar Dish */}
       <group position={[0, 1.5, 1]} ref={dishRef}>
         <mesh rotation={[Math.PI / 4, 0, 0]}>
           <sphereGeometry args={[0.8, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
@@ -130,25 +131,18 @@ const CommsMachinery = ({ position }) => {
   );
 };
 
-// 4. Strategy Deck War Table & Holo Chart
 const StrategyMachinery = ({ position }) => {
   const chartRef = useRef();
   useFrame((state, delta) => (chartRef.current.rotation.y += delta * 0.5));
-  
   return (
     <group position={position}>
-      {/* Base Table */}
       <RoundedBox args={[3, 0.2, 2]} position={[0, 0, 0]} radius={0.1}>
         <meshStandardMaterial color="#0f2410" metalness={0.8} roughness={0.2} />
       </RoundedBox>
-      
-      {/* Holo Projector Base */}
       <mesh position={[0, 0.15, 0]}>
         <cylinderGeometry args={[0.8, 0.8, 0.1, 32]} />
         <meshStandardMaterial color="#2ecc71" emissive="#2ecc71" emissiveIntensity={1} />
       </mesh>
-
-      {/* Floating 3D Bar Chart */}
       <group ref={chartRef} position={[0, 1, 0]}>
         <Box args={[0.3, 0.6, 0.3]} position={[-0.5, 0.3, 0]}>
           <meshStandardMaterial color="#2ecc71" emissive="#2ecc71" emissiveIntensity={2} transparent opacity={0.8} />
@@ -165,7 +159,6 @@ const StrategyMachinery = ({ position }) => {
   );
 };
 
-// 5. Office Desk
 const OfficeMachinery = ({ position }) => {
   return (
     <group position={position}>
@@ -181,7 +174,7 @@ const OfficeMachinery = ({ position }) => {
   );
 };
 
-// --- ROOM COMPONENT ---
+// --- ROOM COMPONENT (Now with cleaner text) ---
 const Room = ({ position, size, color, label, children }) => {
   const [width, , depth] = size;
   const wallHeight = 0.8;
@@ -209,7 +202,8 @@ const Room = ({ position, size, color, label, children }) => {
         <meshBasicMaterial color="#00f0ff" transparent opacity={0.2} />
       </mesh>
       
-      <Text position={[0, 0.6, depth/2 - 0.5]} color="#00f0ff" fontSize={0.3} font="https://fonts.gstatic.com/s/orbitron/v25/yMJRMIlzdpvBhQQL_Qq7dys.woff">
+      {/* Main Room Label - Tucked away inside the room corner */}
+      <Text position={[-width/2 + 0.2, 0.1, -depth/2 + 0.3]} rotation={[-Math.PI / 2, 0, 0]} color="#00f0ff" fontSize={0.4} font="https://fonts.gstatic.com/s/orbitron/v25/yMJRMIlzdpvBhQQL_Qq7dys.woff">
         {label.toUpperCase()}
       </Text>
       
@@ -372,7 +366,6 @@ export default function App() {
               </Html>
             ))}
 
-            {/* ROOMS WITH MACHINERY */}
             <Room position={[0, 0, 0]} size={[8, 1, 6]} color={ROOM_COLORS.bridge} label="Bridge (HQ)">
               <CommandTable position={[0, 0, 0]} />
             </Room>
@@ -394,7 +387,6 @@ export default function App() {
               <Commander activeRoom={activeRoom} setActiveRoom={setActiveRoom} isPaused={!!openRoom} />
             </Room>
 
-            {/* BOTS */}
             {Object.values(bots).map((bot) => {
               let x = 0, z = 0;
               if (bot.location === 'comms_array') { x = -8; z = -8; }
