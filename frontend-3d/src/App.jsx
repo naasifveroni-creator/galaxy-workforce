@@ -1,7 +1,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Box, Grid, Text, Html } from '@react-three/drei';
-import useWebSocket from 'react-use-websocket';
+import { useWebSocket } from 'react-use-websocket';
 import './App.css';
 
 const WS_URL = "wss://orange-system-g4w4gq7r9gxxcw7q-8000.app.github.dev/ws";
