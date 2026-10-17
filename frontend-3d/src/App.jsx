@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Box, Grid, Text, Html } from '@react-three/drei';
+import { OrbitControls, Box, Grid, Text, Html, Sphere, Cylinder, RoundedBox } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import './App.css';
 
@@ -50,15 +50,12 @@ const DataForgeCore = ({ position }) => {
 const Room = ({ position, size, color, label, children }) => {
   return (
     <group position={position}>
-      {/* Solid Base */}
       <Box args={[size[0], 0.5, size[2]]} position={[0, -0.25, 0]}>
         <meshStandardMaterial color={color} transparent opacity={0.9} />
       </Box>
-      {/* Neon Border */}
       <Box args={[size[0], 0.1, size[2]]} position={[0, 0, 0]}>
         <meshBasicMaterial color="#00f0ff" wireframe />
       </Box>
-      {/* Room Label */}
       <Text position={[0, 1, size[2]/2 - 0.5]} color="#00f0ff" fontSize={0.4} font="https://fonts.gstatic.com/s/orbitron/v25/yMJRMIlzdpvBhQQL_Qq7dys.woff">
         {label.toUpperCase()}
       </Text>
@@ -67,32 +64,64 @@ const Room = ({ position, size, color, label, children }) => {
   );
 };
 
-// --- BOT COMPONENT ---
-const Bot = ({ position, color, name, status }) => {
+// --- REAL 3D AMONG US CHARACTER ---
+const Crewmate3D = ({ color, name, status, isCommander }) => {
   return (
-    <group position={position}>
-      <mesh>
-        <capsuleGeometry args={[0.3, 0.6, 8, 16]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.5} />
+    <group>
+      {/* Body (Capsule) */}
+      <mesh castShadow>
+        <capsuleGeometry args={[0.35, 0.5, 8, 16]} />
+        <meshStandardMaterial color={color} roughness={0.4} metalness={0.1} />
       </mesh>
-      <mesh position={[0, 0.2, 0.3]}>
-        <boxGeometry args={[0.3, 0.15, 0.1]} />
-        <meshStandardMaterial color="#87ceeb" emissive="#87ceeb" />
+      
+      {/* Backpack */}
+      <RoundedBox args={[0.3, 0.4, 0.2]} position={[-0.35, 0, 0]} radius={0.05}>
+        <meshStandardMaterial color={color} roughness={0.4} metalness={0.1} />
+      </RoundedBox>
+
+      {/* Visor Frame */}
+      <RoundedBox args={[0.45, 0.25, 0.2]} position={[0.15, 0.25, 0.25]} radius={0.1}>
+        <meshStandardMaterial color="#cccccc" roughness={0.2} metalness={0.8} />
+      </RoundedBox>
+      
+      {/* Glass Visor */}
+      <RoundedBox args={[0.4, 0.2, 0.15]} position={[0.15, 0.25, 0.35]} radius={0.08}>
+        <meshStandardMaterial color="#87ceeb" emissive="#87ceeb" emissiveIntensity={0.5} transparent opacity={0.8} roughness={0.1} metalness={0.9} />
+      </RoundedBox>
+
+      {/* Legs */}
+      <mesh position={[-0.15, -0.5, 0]}>
+        <cylinderGeometry args={[0.1, 0.1, 0.2]} />
+        <meshStandardMaterial color={color} />
       </mesh>
-      <mesh position={[0, -0.5, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      <mesh position={[0.15, -0.5, 0]}>
+        <cylinderGeometry args={[0.1, 0.1, 0.2]} />
+        <meshStandardMaterial color={color} />
+      </mesh>
+
+      {/* Glowing Halo underneath */}
+      <mesh position={[0, -0.65, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[0.4, 0.5, 32]} />
-        <meshBasicMaterial color={color} transparent opacity={0.5} />
+        <meshBasicMaterial color={isCommander ? "#f1c40f" : color} transparent opacity={0.6} />
       </mesh>
+
+      {/* Floating Text */}
       <Html position={[0, 1.2, 0]} center>
-        <div style={{ color: '#fff', fontFamily: 'Orbitron', fontSize: '10px', whiteSpace: 'nowrap', textShadow: '1px 1px 2px #000', textAlign: 'center' }}>
-          {name}<br /><span style={{ color: '#00f0ff' }}>{status}</span>
+        <div style={{ 
+          color: isCommander ? '#f1c40f' : '#fff', 
+          fontFamily: 'Orbitron', fontSize: '10px', 
+          whiteSpace: 'nowrap', textShadow: '1px 1px 3px #000', 
+          textAlign: 'center', fontWeight: 'bold' 
+        }}>
+          {name}
+          {status && <><br /><span style={{ color: '#00f0ff', fontSize: '9px' }}>{status}</span></>}
         </div>
       </Html>
     </group>
   );
 };
 
-// --- THE COMMANDER ---
+// --- THE COMMANDER (3D Model with Movement) ---
 const Commander = () => {
   const ref = useRef();
   const keys = useRef({});
@@ -115,16 +144,9 @@ const Commander = () => {
   });
 
   return (
-    <group ref={ref} position={[8, 0.5, 8]}>
-      <mesh>
-        <capsuleGeometry args={[0.4, 0.8, 8, 16]} />
-        <meshStandardMaterial color="#f1c40f" emissive="#f1c40f" emissiveIntensity={0.8} />
-      </mesh>
-      <Html position={[0, 1.5, 0]} center>
-        <div style={{ color: '#f1c40f', fontFamily: 'Orbitron', fontSize: '12px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
-          COMMANDER
-        </div>
-      </Html>
+    <group ref={ref} position={[8, 0.6, 8]}>
+      <Crewmate3D color="#f1c40f" name="COMMANDER" isCommander={true} />
+      <pointLight color="#f1c40f" intensity={1} distance={3} position={[0, 0.5, 0]} />
     </group>
   );
 };
@@ -163,12 +185,19 @@ export default function App() {
     <div className="app-container">
       <div className="canvas-container">
         <Suspense fallback={<div style={{color: 'white', position: 'absolute', top: '50%', left: '50%'}}>Loading Ship...</div>}>
-          <Canvas camera={{ position: [0, 18, 22], fov: 40 }}>
+          <Canvas camera={{ position: [0, 18, 22], fov: 40 }} shadows>
             <color attach="background" args={['#02040a']} />
             
-            <ambientLight intensity={0.2} />
-            <directionalLight position={[10, 10, 5]} intensity={0.5} />
-
+            <ambientLight intensity={0.3} />
+            {/* Shadow-casting light */}
+            <directionalLight 
+              position={[10, 20, 10]} 
+              intensity={1} 
+              castShadow 
+              shadow-mapSize-width={2048} 
+              shadow-mapSize-height={2048} 
+            />
+            
             <Grid 
               position={[0, -1, 0]} args={[50, 50]} cellSize={1} cellThickness={0.5} cellColor="#00f0ff" 
               sectionSize={5} sectionThickness={1} sectionColor="#00f0ff" fadeDistance={30} fadeStrength={1} 
@@ -197,20 +226,25 @@ export default function App() {
               if (bot.location === 'strategy_deck') { x = -8; z = 8; }
               if (bot.location === 'office') { x = 8; z = 8; }
               
-              // MORE SPACING FOR 3D
-              if (bot.bot_id === 'email_bot') x -= 2.5;
-              if (bot.bot_id === 'data_bot') z -= 2.5;
-              if (bot.bot_id === 'excel_bot') x += 2.5;
-              if (bot.bot_id === 'report_bot') z += 2.5;
+              if (bot.bot_id === 'email_bot') x -= 2;
+              if (bot.bot_id === 'data_bot') z -= 2;
+              if (bot.bot_id === 'excel_bot') x += 2;
+              if (bot.bot_id === 'report_bot') z += 2;
 
               return (
-                <Bot key={bot.bot_id} position={[x, 0.5, z]} color={BOT_COLORS[bot.bot_id]} name={bot.name} status={bot.status} />
+                <group key={bot.bot_id} position={[x, 0.6, z]}>
+                  <Crewmate3D 
+                    color={BOT_COLORS[bot.bot_id]} 
+                    name={bot.name} 
+                    status={bot.status} 
+                  />
+                </group>
               );
             })}
 
             {/* THE MAGIC GLOW EFFECT */}
             <EffectComposer>
-              <Bloom luminanceThreshold={0.4} mipmapBlur intensity={1.5} />
+              <Bloom luminanceThreshold={0.5} mipmapBlur intensity={1.5} />
             </EffectComposer>
           </Canvas>
         </Suspense>
