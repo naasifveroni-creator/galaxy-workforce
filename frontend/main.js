@@ -142,10 +142,8 @@ new Phaser.Game({
         stars.fillCircle(Math.random() * 960, Math.random() * 640, Math.random() * 1.5);
       }
 
-      // 2. Ship Corridor Grid
-      const g = this.add.graphics().lineStyle(1, 0x1a2b4c, 0.3);
-      for (let x = 0; x <= 12; x++) g.lineBetween(x * TILE, 0, x * TILE, 8 * TILE);
-      for (let y = 0; y <= 8; y++)  g.lineBetween(0, y * TILE, 12 * TILE, y * TILE);
+      // 2. Ship Corridor (The space between rooms)
+      this.add.rectangle(0, 0, 12 * TILE, 8 * TILE, 0x0a0a14).setOrigin(0).setAlpha(0.8);
 
       // ---------------------------------------------------------
       // ROOM 1: THE BRIDGE (Command Center)
@@ -156,22 +154,26 @@ new Phaser.Game({
       const bw = bridge.w * TILE;
       const bh = bridge.h * TILE;
 
-      // Floor & Walls
-      this.add.rectangle(bx + 4, by + 4, bw, bh, 0x000000, 0.8).setOrigin(0); // Shadow
-      this.add.rectangle(bx, by, bw, bh, 0x1e293b, 1).setOrigin(0);
-      this.add.rectangle(bx, by, bw, 8, 0x4da6ff).setOrigin(0); // Neon Top Wall
-      this.add.rectangle(bx, by, 8, bh, 0x4da6ff).setOrigin(0); // Neon Left Wall
-      this.add.rectangle(bx + bw - 8, by, 8, bh, 0x1e293b).setOrigin(0);
-      this.add.rectangle(bx, by + bh - 8, bw, 8, 0x0f172a).setOrigin(0);
+      // Base and Shadow
+      this.add.rectangle(bx + 10, by + 10, bw, bh, 0x000000, 0.9).setOrigin(0); // Deep Shadow
+      this.add.rectangle(bx, by, bw, bh, 0x1e293b).setOrigin(0); // Floor
+      
+      // Raised Platform
+      this.add.rectangle(bx + 20, by + 20, bw - 40, bh - 40, 0x0f172a).setOrigin(0);
+      
+      // Glowing Walls
+      const wallG = this.add.graphics().lineStyle(4, 0x4da6ff, 0.8);
+      wallG.strokeRect(bx, by, bw, bh);
+      const innerWallG = this.add.graphics().lineStyle(1, 0x4da6ff, 0.4);
+      innerWallG.strokeRect(bx + 8, by + 8, bw - 16, bh - 16);
 
       // Command Console
-      this.add.rectangle(bx + 30, by + 30, bw - 60, 40, 0x334155).setOrigin(0).setStrokeStyle(1, 0x4da6ff);
-      this.add.rectangle(bx + 40, by + 40, bw - 80, 20, 0x0f172a).setOrigin(0);
-      this.add.text(bx + 10, by + 10, "BRIDGE (HQ)", { fontSize: "12px", color: "#4da6ff", fontWeight: "bold" });
+      this.add.rectangle(bx + 40, by + bh - 50, 100, 30, 0x1e293b).setOrigin(0).setStrokeStyle(1, 0x4da6ff);
+      this.add.text(bx + 10, by + 10, "BRIDGE (HQ)", { fontSize: "12px", color: "#4da6ff", fontWeight: "bold", stroke: "#000", strokeThickness: 2 });
 
       // Hologram
-      const holo = this.add.circle(bx + bw/2, by + bh - 30, 20, 0x4da6ff, 0.3);
-      this.tweens.add({ targets: holo, alpha: 0.8, scale: 1.3, yoyo: true, repeat: -1, duration: 1500 });
+      const holo = this.add.circle(bx + bw/2, by + 40, 20, 0x4da6ff, 0.4);
+      this.tweens.add({ targets: holo, alpha: 0.8, scale: 1.2, yoyo: true, repeat: -1, duration: 1500 });
 
       // ---------------------------------------------------------
       // ROOM 2: COMMS ARRAY (Server Room)
@@ -182,19 +184,21 @@ new Phaser.Game({
       const cw = comms.w * TILE;
       const ch = comms.h * TILE;
 
-      this.add.rectangle(cx + 4, cy + 4, cw, ch, 0x000000, 0.8).setOrigin(0);
-      this.add.rectangle(cx, cy, cw, ch, 0x451a1a, 1).setOrigin(0);
-      this.add.rectangle(cx, cy, cw, 8, 0xff4d4d).setOrigin(0); // Neon Wall
+      this.add.rectangle(cx + 10, cy + 10, cw, ch, 0x000000, 0.9).setOrigin(0);
+      this.add.rectangle(cx, cy, cw, ch, 0x451a1a).setOrigin(0);
       
+      const commsWall = this.add.graphics().lineStyle(4, 0xff4d4d, 0.6);
+      commsWall.strokeRect(cx, cy, cw, ch);
+      this.add.text(cx + 10, cy + 10, "COMMS ARRAY", { fontSize: "12px", color: "#ff4d4d", fontWeight: "bold", stroke: "#000", strokeThickness: 2 });
+
       // Server Racks
       for (let i = 0; i < 3; i++) {
-        this.add.rectangle(cx + 30 + (i*60), cy + 50, 40, 120, 0x1c0c0c).setOrigin(0).setStrokeStyle(1, 0x7b241c);
-        for (let j = 0; j < 5; j++) {
-          const light = this.add.circle(cx + 50 + (i*60), cy + 65 + (j*20), 3, 0xff4d4d);
-          this.tweens.add({ targets: light, alpha: 0, yoyo: true, repeat: -1, duration: 300 + Math.random() * 800 });
+        this.add.rectangle(cx + 30 + (i*50), cy + 60, 30, 100, 0x1c0c0c).setOrigin(0).setStrokeStyle(1, 0x7b241c);
+        for (let j = 0; j < 4; j++) {
+          const light = this.add.circle(cx + 45 + (i*50), cy + 75 + (j*20), 3, 0xff4d4d);
+          this.tweens.add({ targets: light, alpha: 0.2, yoyo: true, repeat: -1, duration: 300 + Math.random() * 500 });
         }
       }
-      this.add.text(cx + 10, cy + 10, "COMMS ARRAY", { fontSize: "12px", color: "#ff4d4d", fontWeight: "bold" });
 
       // ---------------------------------------------------------
       // ROOM 3: DATA FORGE (Data Core Room)
@@ -205,18 +209,19 @@ new Phaser.Game({
       const dw = data.w * TILE;
       const dh = data.h * TILE;
 
-      this.add.rectangle(dx + 4, dy + 4, dw, dh, 0x000000, 0.8).setOrigin(0);
-      this.add.rectangle(dx, dy, dw, dh, 0x0f3a4d, 1).setOrigin(0);
-      this.add.rectangle(dx, dy, dw, 8, 0x4da6ff).setOrigin(0);
+      this.add.rectangle(dx + 10, dy + 10, dw, dh, 0x000000, 0.9).setOrigin(0);
+      this.add.rectangle(dx, dy, dw, dh, 0x0f3a4d).setOrigin(0);
+      
+      const dataWall = this.add.graphics().lineStyle(4, 0x4da6ff, 0.6);
+      dataWall.strokeRect(dx, dy, dw, dh);
+      this.add.text(dx + 10, dy + 10, "DATA FORGE", { fontSize: "12px", color: "#4da6ff", fontWeight: "bold", stroke: "#000", strokeThickness: 2 });
 
       // Central Data Core
-      this.add.circle(dx + dw/2, dy + dh/2, 60, 0x051420).setStrokeStyle(2, 0x4da6ff);
-      const ring1 = this.add.circle(dx + dw/2, dy + dh/2, 45, 0x000000, 0).setStrokeStyle(1, 0x4da6ff, 0.8);
+      this.add.circle(dx + dw/2, dy + dh/2, 40, 0x051420).setStrokeStyle(2, 0x4da6ff);
+      const ring1 = this.add.circle(dx + dw/2, dy + dh/2, 50, 0x000000, 0).setStrokeStyle(1, 0x4da6ff, 0.5);
       this.tweens.add({ targets: ring1, angle: 360, repeat: -1, duration: 4000 });
-      const ring2 = this.add.circle(dx + dw/2, dy + dh/2, 30, 0x000000, 0).setStrokeStyle(1, 0x87ceeb, 0.8);
-      this.tweens.add({ targets: ring2, angle: -360, repeat: -1, duration: 3000 });
-
-      this.add.text(dx + 10, dy + 10, "DATA FORGE", { fontSize: "12px", color: "#4da6ff", fontWeight: "bold" });
+      const ring2 = this.add.circle(dx + dw/2, dy + dh/2, 60, 0x000000, 0).setStrokeStyle(1, 0x4da6ff, 0.3);
+      this.tweens.add({ targets: ring2, angle: -360, repeat: -1, duration: 6000 });
 
       // ---------------------------------------------------------
       // ROOM 4: STRATEGY DECK (War Room)
@@ -227,17 +232,17 @@ new Phaser.Game({
       const sw = strat.w * TILE;
       const sh = strat.h * TILE;
 
-      this.add.rectangle(sx + 4, sy + 4, sw, sh, 0x000000, 0.8).setOrigin(0);
-      this.add.rectangle(sx, sy, sw, sh, 0x1a3d1a, 1).setOrigin(0);
-      this.add.rectangle(sx, sy, sw, 8, 0x2ecc71).setOrigin(0);
+      this.add.rectangle(sx + 10, sy + 10, sw, sh, 0x000000, 0.9).setOrigin(0);
+      this.add.rectangle(sx, sy, sw, sh, 0x1a3d1a).setOrigin(0);
+      
+      const stratWall = this.add.graphics().lineStyle(4, 0x2ecc71, 0.6);
+      stratWall.strokeRect(sx, sy, sw, sh);
+      this.add.text(sx + 10, sy + 10, "STRATEGY DECK", { fontSize: "12px", color: "#2ecc71", fontWeight: "bold", stroke: "#000", strokeThickness: 2 });
 
       // War Table
-      this.add.ellipse(sx + sw/2, sy + sh/2, 200, 120, 0x0f2410).setStrokeStyle(3, 0x2ecc71);
-      this.add.ellipse(sx + sw/2, sy + sh/2, 160, 80, 0x000000, 0.5);
-      const holoBoard = this.add.ellipse(sx + sw/2, sy + sh/2, 140, 60, 0x2ecc71, 0.2);
+      this.add.ellipse(sx + sw/2, sy + sh/2, 120, 80, 0x0f2410).setStrokeStyle(2, 0x2ecc71);
+      const holoBoard = this.add.ellipse(sx + sw/2, sy + sh/2, 100, 60, 0x2ecc71, 0.2);
       this.tweens.add({ targets: holoBoard, alpha: 0.5, yoyo: true, repeat: -1, duration: 1500 });
-
-      this.add.text(sx + 10, sy + 10, "STRATEGY DECK", { fontSize: "12px", color: "#2ecc71", fontWeight: "bold" });
 
       // ---------------------------------------------------------
       // 4. Add the Commander Avatar
