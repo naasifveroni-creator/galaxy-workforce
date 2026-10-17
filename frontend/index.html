@@ -5,78 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Galaxy Workforce</title>
     <style>
-        body { 
-            margin: 0; padding: 0; background: #05050a; color: #fff; 
-            display: flex; height: 100vh; font-family: 'Courier New', Courier, monospace; overflow: hidden;
-        }
-        
-        #game-view { flex: 1; display: flex; justify-content: center; align-items: center; background: radial-gradient(circle, #111 0%, #000 100%); }
-        
-        #map {
-            position: relative; width: 800px; height: 600px; border: 1px solid #333;
-            background: url('https://www.transparenttextures.com/patterns/stardust.png');
-        }
-
-        .room { position: absolute; border: 1px solid #555; padding: 10px; font-size: 14px; }
-
-        #hud { 
-            width: 350px; background: #0d111a; border-left: 2px solid #1a2035; 
-            padding: 20px; display: flex; flex-direction: column; gap: 20px; 
-            box-shadow: -5px 0 15px rgba(0,0,0,0.5); z-index: 10;
-        }
-
-        h2, h3 { margin: 0 0 10px 0; font-size: 16px; color: #4da6ff; text-transform: uppercase; letter-spacing: 1px; }
-
-        button { 
-            background: #131b2e; color: #a9b7d0; border: 1px solid #2a3b5c; 
-            padding: 12px; border-radius: 4px; cursor: pointer; text-align: left; 
-            transition: all 0.2s; font-family: 'Courier New', Courier, monospace; font-weight: bold;
-        }
+        body { margin: 0; padding: 0; background: #05050a; color: #fff; display: flex; height: 100vh; font-family: 'Courier New', Courier, monospace; overflow: hidden; }
+        #game-container { flex: 1; display: flex; justify-content: center; align-items: center; }
+        #hud { width: 320px; background: #0d111a; border-left: 2px solid #1a2035; padding: 20px; display: flex; flex-direction: column; gap: 20px; box-shadow: -5px 0 15px rgba(0,0,0,0.5); z-index: 10; }
+        h2, h3 { margin: 0 0 10px 0; font-size: 16px; color: #4da6ff; text-transform: uppercase; }
+        button { background: #131b2e; color: #a9b7d0; border: 1px solid #2a3b5c; padding: 12px; border-radius: 4px; cursor: pointer; text-align: left; transition: all 0.2s; font-family: 'Courier New', Courier, monospace; font-weight: bold; }
         button:hover { background: #1c2942; border-color: #4da6ff; color: #fff; }
-        
         .action-btn { padding: 8px; border-radius: 3px; cursor: pointer; font-weight: bold; border: none; color: white; }
         .approve { background: #2ecc71; }
         .reject { background: #e74c3c; }
-
-        .approval-card { 
-            background: #151a22; border: 1px solid #f1c40f; padding: 15px; 
-            border-radius: 4px; margin-bottom: 10px; font-size: 12px; 
-            box-shadow: 0 0 10px rgba(241, 196, 15, 0.1);
-        }
-
-        /* --- THE BOT ANIMATION FIX --- */
-        .bot { 
-            position: absolute; width: 40px; height: 40px; border-radius: 50%; 
-            display: flex; justify-content: center; align-items: center; 
-            font-size: 10px; font-weight: bold; color: black; 
-            /* THIS IS THE CRITICAL FIX: Smooth transition */
-            transition: left 2s linear, top 2s linear;
-            z-index: 5;
-        }
-        .bot-label { position: absolute; top: -25px; white-space: nowrap; color: white; font-size: 12px; text-shadow: 1px 1px 2px black; }
+        .approval-card { background: #151a22; border: 1px solid #f1c40f; padding: 15px; border-radius: 4px; margin-bottom: 10px; font-size: 12px; }
     </style>
+    <!-- Load Phaser from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
 </head>
 <body>
 
-    <!-- The Galaxy Map -->
-    <div id="game-view">
-        <div id="map">
-            <!-- Rooms -->
-            <div class="room" style="top: 0; left: 0; width: 300px; height: 200px; background: rgba(69, 26, 26, 0.5);">Comms Array</div>
-            <div class="room" style="top: 0; right: 0; width: 300px; height: 200px; background: rgba(15, 58, 77, 0.5);">Data Forge</div>
-            <div class="room" style="bottom: 0; left: 0; width: 300px; height: 200px; background: rgba(26, 61, 26, 0.5);">Strategy Deck</div>
-            <div class="room" style="bottom: 50px; left: 250px; width: 300px; height: 150px; background: rgba(30, 41, 59, 0.8); border-color: #4da6ff;">Bridge (HQ)</div>
-            <!-- Bots will spawn here -->
-        </div>
-    </div>
+    <div id="game-container"></div>
 
-    <!-- The HUD -->
     <div id="hud">
         <div>
             <h2>Commander HUD</h2>
             <div id="connection-status" style="font-size: 12px; color: #f1c40f;">connecting...</div>
         </div>
-
         <div>
             <h3>Dispatch</h3>
             <div style="display: flex; flex-direction: column; gap: 10px;">
@@ -86,26 +37,52 @@
                 <button onclick="sendDispatch('report_bot')">▶ Run ReportBot</button>
             </div>
         </div>
-
         <div style="flex: 1; overflow-y: auto;">
             <h3>Approvals</h3>
             <div id="approval-container" style="display: flex; flex-direction: column; gap: 10px;"></div>
         </div>
     </div>
 
+    <!-- ALL the logic is here so it loads AFTER the buttons exist -->
     <script>
         const WS_URL = "wss://orange-system-g4w4gq7r9gxxcw7q-8000.app.github.dev/ws";
         let ws;
-        let bots = {}; 
+        let gameScene;
+        let bots = {};
 
-        // Coordinates based on the center of each room box
         const ROOMS = {
-            bridge: { x: 400, y: 475 },
-            comms_array: { x: 150, y: 100 },
-            data_forge: { x: 650, y: 100 },
-            strategy_deck: { x: 150, y: 500 }
+            bridge: { x: 400, y: 500, label: "Bridge (HQ)", color: 0x1e293b },
+            comms_array: { x: 150, y: 150, label: "Comms Array", color: 0x451a1a },
+            data_forge: { x: 650, y: 150, label: "Data Forge", color: 0x0f3a4d },
+            strategy_deck: { x: 150, y: 450, label: "Strategy Deck", color: 0x1a3d1a }
         };
 
+        // 1. SET UP PHASER
+        const config = {
+            type: Phaser.AUTO,
+            width: 800,
+            height: 600,
+            parent: 'game-container',
+            backgroundColor: '#0a0a0a',
+            scene: { create: create }
+        };
+
+        function create() {
+            gameScene = this; // Save the scene so we can use tweens later
+
+            // Draw Rooms
+            for (const [key, room] of Object.entries(ROOMS)) {
+                this.add.rectangle(room.x, room.y, 250, 200, room.color, 0.5).setStrokeStyle(2, 0x555555);
+                this.add.text(room.x - 110, room.y - 90, room.label, { fontFamily: 'monospace', fontSize: '14px', color: '#fff' });
+            }
+            
+            // Connect WebSocket
+            connectWebSocket();
+        }
+
+        new Phaser.Game(config);
+
+        // 2. WEBSOCKET LOGIC
         function connectWebSocket() {
             ws = new WebSocket(WS_URL);
 
@@ -131,47 +108,55 @@
             };
         }
 
+        // 3. BOT MOVEMENT LOGIC
         function updateBot(data) {
-            let botEl = bots[data.bot_id];
+            let bot = bots[data.bot_id];
+            const room = ROOMS[data.location] || ROOMS.bridge;
             
-            if (!botEl) {
-                botEl = document.createElement('div');
-                botEl.className = 'bot';
-                botEl.style.backgroundColor = data.color;
-                botEl.innerHTML = `<div class="bot-label">${data.name}</div><span style="z-index:10; position:relative;">${data.status}</span>`;
+            // Calculate offset so bots don't stack
+            const offset = data.bot_id === 'email_bot' ? -40 : data.bot_id === 'data_bot' ? -15 : data.bot_id === 'excel_bot' ? 15 : 40;
+            const targetX = room.x + offset;
+            const targetY = room.y + 20; // slightly lower so they don't cover the room text
+
+            // Create the bot if it doesn't exist
+            if (!bot) {
+                const circle = gameScene.add.circle(targetX, targetY, 15, data.color).setStrokeStyle(2, 0xffffff);
+                const label = gameScene.add.text(targetX, targetY - 30, data.name, { fontFamily: 'monospace', fontSize: '12px', color: '#fff' }).setOrigin(0.5);
+                const statusLabel = gameScene.add.text(targetX, targetY + 25, data.status.replace('_', ' '), { fontFamily: 'monospace', fontSize: '10px', color: '#aaa' }).setOrigin(0.5);
                 
-                // Start them slightly offset in the bridge so they aren't stacked
-                const offset = data.bot_id === 'email_bot' ? -60 : data.bot_id === 'data_bot' ? -20 : data.bot_id === 'excel_bot' ? 20 : 60;
-                botEl.style.left = (ROOMS.bridge.x + offset) + 'px';
-                botEl.style.top = ROOMS.bridge.y + 'px';
-                
-                document.getElementById('map').appendChild(botEl);
-                bots[data.bot_id] = botEl;
+                bot = { sprite: circle, label: label, status: statusLabel };
+                bots[data.bot_id] = bot;
             }
 
-            botEl.querySelector('span').innerText = data.status.replace('_', ' ');
+            // Update text
+            bot.status.setText(data.status.replace('_', ' '));
 
-            const room = ROOMS[data.location] || ROOMS.bridge;
-            const offset = data.bot_id === 'email_bot' ? -60 : data.bot_id === 'data_bot' ? -20 : data.bot_id === 'excel_bot' ? 20 : 60;
-            
-            // This triggers the CSS transition to slide the bot!
-            botEl.style.left = (room.x + offset) + 'px';
-            botEl.style.top = room.y + 'px';
+            // Move the bot if it needs to move
+            if (bot.sprite.x !== targetX || bot.sprite.y !== targetY) {
+                gameScene.tweens.add({
+                    targets: [bot.sprite, bot.label, bot.status],
+                    x: targetX,
+                    y: function(target) {
+                        if (target === bot.label) return targetY - 30;
+                        if (target === bot.status) return targetY + 25;
+                        return targetY;
+                    },
+                    duration: 2000, // 2 seconds to walk
+                    ease: 'Linear'
+                });
+            }
         }
 
+        // 4. HUD LOGIC
         function showApprovalCard(data) {
             const container = document.getElementById('approval-container');
             const card = document.createElement('div');
             card.className = 'approval-card';
             card.id = `card-${data.bot_id}`;
-            
-            let preview = data.preview ? JSON.stringify(data.preview, null, 2) : "No preview data.";
-            
             card.innerHTML = `
                 <div style="font-weight:bold; color:#4da6ff; margin-bottom:5px;">${data.bot_id}</div>
                 <div style="margin-bottom:10px;">${data.summary}</div>
-                <pre style="background:#000; padding:5px; font-size:10px; max-height:100px; overflow-y:auto; color:#0f0;">${preview}</pre>
-                <div style="display:flex; gap:10px; margin-top:10px;">
+                <div style="display:flex; gap:10px;">
                     <button class="action-btn approve" onclick="sendApproval('${data.bot_id}', true)">APPROVE</button>
                     <button class="action-btn reject" onclick="sendApproval('${data.bot_id}', false)">REJECT</button>
                 </div>
@@ -192,8 +177,6 @@
                 if (card) card.remove();
             }
         }
-
-        connectWebSocket();
     </script>
 </body>
 </html>
