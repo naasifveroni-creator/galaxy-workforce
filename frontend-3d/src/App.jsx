@@ -130,9 +130,7 @@ const CommandTable = ({ position }) => {
         <meshStandardMaterial color="#00f0ff" emissive="#00f0ff" emissiveIntensity={2} wireframe transparent opacity={0.8} />
       </mesh>
       <pointLight color="#00f0ff" intensity={3} distance={6} position={[0, 0.5, 0]} />
-      
       <SecurityCamera position={[3.5, 1.5, -2.5]} />
-      
       <FloatingStatBar position={[0, 1.8, 0]} label="SHIP POWER" color="#00f0ff" width={2.5} />
     </group>
   );
@@ -165,9 +163,7 @@ const DataForgeCore = ({ position }) => {
         <meshStandardMaterial color="#051420" metalness={0.9} />
       </mesh>
       <pointLight color="#00f0ff" intensity={2} distance={6} />
-      
       <SecurityCamera position={[2, 1.5, -2]} />
-      
       <FloatingStatBar position={[0, 2.2, 0]} label="DATA STREAM" color="#00f0ff" />
     </group>
   );
@@ -202,9 +198,7 @@ const CommsMachinery = ({ position }) => {
         </mesh>
       </group>
       <pointLight color="#ff0000" intensity={2} distance={5} position={[0, 1, -1]} />
-      
       <SecurityCamera position={[2, 1.5, -2]} />
-      
       <FloatingStatBar position={[-1, 2.2, 0]} label="SIGNAL" color="#ff4d4d" width={1.2} />
     </group>
   );
@@ -234,9 +228,7 @@ const StrategyMachinery = ({ position }) => {
         </Box>
       </group>
       <pointLight color="#2ecc71" intensity={3} distance={6} position={[0, 1.5, 0]} />
-      
       <SecurityCamera position={[2, 1.5, -2]} />
-      
       <FloatingStatBar position={[0, 2.5, 0]} label="REVENUE" color="#2ecc71" width={2} />
     </group>
   );
@@ -585,7 +577,6 @@ export default function App() {
               enablePan={true}
             />
 
-            {/* ONLY RENDER TOOLTIP IF ACTIVE ROOM */}
             {!openRoom && activeRoom && Object.entries(ROOM_POSITIONS)
               .filter(([id]) => id === activeRoom)
               .map(([id, room]) => (
@@ -636,35 +627,102 @@ export default function App() {
         <Minimap bots={bots} commanderPos={commanderPos} />
       </div>
 
+      {/* --- NEW CONTROL PANEL HUD --- */}
       <div className="hud-panel">
-        <div className="profile-card">
-          <div style={{ color: '#00f0ff', fontFamily: 'Orbitron' }}>⚔️ COMMANDER</div>
-          <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#fff' }}>LV.4</div>
-          <div className="xp-bar-container"><div className="xp-bar"></div></div>
+        
+        {/* SYSTEM HEADER */}
+        <div className="system-header">
+          <div className="logo-text">GALAXY WORKFORCE</div>
+          <div className="status-badge">ONLINE</div>
         </div>
 
-        <div>
-          <h4>Dispatch</h4>
-          <div className="button-group">
-            {['email_bot', 'data_bot', 'excel_bot', 'report_bot'].map(id => (
-              <button key={id} onClick={() => sendMessage({ type: "START_TASK", bot_id: id })}>
-                ▶ Run {id.replace('_', ' ')}
-              </button>
-            ))}
+        {/* COMMANDER PROFILE */}
+        <div className="profile-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontSize: '10px', color: '#8892b0' }}>COMMANDER</div>
+              <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#fff' }}>LV.4</div>
+            </div>
+            <div style={{ fontSize: '24px' }}>⚔️</div>
+          </div>
+          <div className="xp-bar-container">
+            <div className="xp-bar" style={{ width: '65%' }}></div>
           </div>
         </div>
 
+        {/* TELEMETRY GRID */}
         <div>
-          <h4>Approvals</h4>
-          {approvals.map((a) => (
-            <div key={a.task_id} className="approval-card">
-              <strong>{a.bot_id}</strong><br/>{a.summary}
-              <div className="row">
-                <button className="approve" onClick={() => sendMessage({ type: 'APPROVE_ACTION', task_id: a.task_id })}>Approve</button>
-                <button className="reject" onClick={() => sendMessage({ type: 'REJECT_ACTION', task_id: a.task_id })}>Reject</button>
-              </div>
+          <h4>System Telemetry</h4>
+          <div className="telemetry-grid">
+            <div className="telemetry-box">
+              <div className="telem-label">CPU</div>
+              <div className="telem-value">42%</div>
             </div>
-          ))}
+            <div className="telemetry-box">
+              <div className="telem-label">NETWORK</div>
+              <div className="telem-value" style={{ color: '#2ecc71' }}>STABLE</div>
+            </div>
+            <div className="telemetry-box">
+              <div className="telem-label">POWER</div>
+              <div className="telem-value" style={{ color: '#f1c40f' }}>98%</div>
+            </div>
+            <div className="telemetry-box">
+              <div className="telem-label">TASKS</div>
+              <div className="telem-value">{approvals.length} PENDING</div>
+            </div>
+          </div>
+        </div>
+
+        {/* BOT STATUS MATRIX */}
+        <div>
+          <h4>Agent Status</h4>
+          <div className="bot-matrix">
+            {['email_bot', 'data_bot', 'excel_bot', 'report_bot'].map(id => {
+              const bot = bots[id] || { status: 'offline' };
+              return (
+                <div key={id} className="bot-row">
+                  <div className={`status-indicator ${bot.status}`}></div>
+                  <div className="bot-name">{id.replace('_', ' ')}</div>
+                  <div className="bot-state">{bot.status}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* DISPATCH CONTROLS */}
+        <div>
+          <h4>Dispatch Controls</h4>
+          <div className="button-group">
+            <button onClick={() => sendMessage({ type: "START_TASK", bot_id: 'data_bot' })}>
+              <span>▶ RUN DATA FORGE</span>
+            </button>
+            <button onClick={() => sendMessage({ type: "START_TASK", bot_id: 'excel_bot' })}>
+              <span>▶ BUILD EXCEL</span>
+            </button>
+            <button onClick={() => sendMessage({ type: "START_TASK", bot_id: 'report_bot' })}>
+              <span>▶ GENERATE REPORT</span>
+            </button>
+          </div>
+        </div>
+
+        {/* APPROVALS */}
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          <h4>Pending Approvals</h4>
+          {approvals.length === 0 ? (
+            <div style={{ fontSize: '11px', color: '#4a5568', textAlign: 'center', marginTop: '10px' }}>No actions awaiting approval.</div>
+          ) : (
+            approvals.map((a) => (
+              <div key={a.task_id} className="approval-card">
+                <div style={{ color: '#f1c40f', fontWeight: 'bold', marginBottom: '4px' }}>{a.bot_id.toUpperCase()}</div>
+                {a.summary}
+                <div className="row">
+                  <button className="approve" onClick={() => sendMessage({ type: 'APPROVE_ACTION', task_id: a.task_id })}>APPROVE</button>
+                  <button className="reject" onClick={() => sendMessage({ type: 'REJECT_ACTION', task_id: a.task_id })}>REJECT</button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
