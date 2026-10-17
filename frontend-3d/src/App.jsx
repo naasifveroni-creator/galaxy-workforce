@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Box, Grid, Text, Html, Sphere } from '@react-three/drei';
+import { OrbitControls, Box, Grid, Text, Html } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import './App.css';
 
@@ -14,8 +14,7 @@ const BOT_COLORS = {
   email_bot: '#ff0000', data_bot: '#ffff00', excel_bot: '#0000ff', report_bot: '#00ff00'
 };
 
-// --- 3D MACHINERY COMPONENTS ---
-
+// --- 3D MACHINERY ---
 const BridgeHologram = ({ position }) => {
   const ref = useRef();
   useFrame((state, delta) => (ref.current.rotation.y += delta));
@@ -40,7 +39,7 @@ const DataForgeCore = ({ position }) => {
         <meshStandardMaterial color="#4da6ff" emissive="#4da6ff" emissiveIntensity={0.5} transparent opacity={0.5} />
       </mesh>
       <mesh ref={ref}>
-        <torusGeometry args={[1.5, 0.05, 16, 64]} />
+        <torusGeometry args={[1.2, 0.05, 16, 64]} />
         <meshStandardMaterial color="#00f0ff" emissive="#00f0ff" emissiveIntensity={2} />
       </mesh>
     </group>
@@ -60,7 +59,7 @@ const Room = ({ position, size, color, label, children }) => {
         <meshBasicMaterial color="#00f0ff" wireframe />
       </Box>
       {/* Room Label */}
-      <Text position={[0, 1, size[2]/2 - 0.5]} color="#00f0ff" fontSize={0.6} font="https://fonts.gstatic.com/s/orbitron/v25/yMJRMIlzdpvBhQQL_Qq7dys.woff">
+      <Text position={[0, 1, size[2]/2 - 0.5]} color="#00f0ff" fontSize={0.4} font="https://fonts.gstatic.com/s/orbitron/v25/yMJRMIlzdpvBhQQL_Qq7dys.woff">
         {label.toUpperCase()}
       </Text>
       {children}
@@ -72,22 +71,18 @@ const Room = ({ position, size, color, label, children }) => {
 const Bot = ({ position, color, name, status }) => {
   return (
     <group position={position}>
-      {/* Bot Body */}
       <mesh>
         <capsuleGeometry args={[0.3, 0.6, 8, 16]} />
         <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.5} />
       </mesh>
-      {/* Visor */}
       <mesh position={[0, 0.2, 0.3]}>
         <boxGeometry args={[0.3, 0.15, 0.1]} />
         <meshStandardMaterial color="#87ceeb" emissive="#87ceeb" />
       </mesh>
-      {/* Halo */}
       <mesh position={[0, -0.5, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[0.4, 0.5, 32]} />
         <meshBasicMaterial color={color} transparent opacity={0.5} />
       </mesh>
-      {/* UI Label */}
       <Html position={[0, 1.2, 0]} center>
         <div style={{ color: '#fff', fontFamily: 'Orbitron', fontSize: '10px', whiteSpace: 'nowrap', textShadow: '1px 1px 2px #000', textAlign: 'center' }}>
           {name}<br /><span style={{ color: '#00f0ff' }}>{status}</span>
@@ -100,9 +95,8 @@ const Bot = ({ position, color, name, status }) => {
 // --- THE COMMANDER ---
 const Commander = () => {
   const ref = useRef();
-  
-  // Keyboard movement logic
   const keys = useRef({});
+  
   useEffect(() => {
     const down = (e) => keys.current[e.key.toLowerCase()] = true;
     const up = (e) => keys.current[e.key.toLowerCase()] = false;
@@ -203,10 +197,11 @@ export default function App() {
               if (bot.location === 'strategy_deck') { x = -8; z = 8; }
               if (bot.location === 'office') { x = 8; z = 8; }
               
-              if (bot.bot_id === 'email_bot') x -= 1.5;
-              if (bot.bot_id === 'data_bot') z -= 1.5;
-              if (bot.bot_id === 'excel_bot') x += 1.5;
-              if (bot.bot_id === 'report_bot') z += 1.5;
+              // MORE SPACING FOR 3D
+              if (bot.bot_id === 'email_bot') x -= 2.5;
+              if (bot.bot_id === 'data_bot') z -= 2.5;
+              if (bot.bot_id === 'excel_bot') x += 2.5;
+              if (bot.bot_id === 'report_bot') z += 2.5;
 
               return (
                 <Bot key={bot.bot_id} position={[x, 0.5, z]} color={BOT_COLORS[bot.bot_id]} name={bot.name} status={bot.status} />
@@ -215,7 +210,7 @@ export default function App() {
 
             {/* THE MAGIC GLOW EFFECT */}
             <EffectComposer>
-              <Bloom luminanceThreshold={0.5} mipmapBlur intensity={1.5} />
+              <Bloom luminanceThreshold={0.4} mipmapBlur intensity={1.5} />
             </EffectComposer>
           </Canvas>
         </Suspense>
