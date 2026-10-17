@@ -229,12 +229,11 @@ const Crewmate3D = ({ color, name, status, isCommander }) => {
   );
 };
 
-// --- WALKING BOT COMPONENT ---
-// This component handles the gliding logic over time
+// --- WALKING BOT COMPONENT (Now with smooth easing & bobbing) ---
 const MovingBot = ({ bot }) => {
   const groupRef = useRef();
+  const innerRef = useRef();
   
-  // Calculate target position based on location
   const getTargetPos = (loc, id) => {
     let x = 0, z = 0;
     if (loc === 'comms_array') { x = -8; z = -8; }
@@ -242,7 +241,6 @@ const MovingBot = ({ bot }) => {
     if (loc === 'strategy_deck') { x = -8; z = 8; }
     if (loc === 'office') { x = 8; z = 8; }
     
-    // Spread offsets
     if (id === 'email_bot') x -= 2;
     if (id === 'data_bot') z -= 2;
     if (id === 'excel_bot') x += 2;
@@ -251,34 +249,51 @@ const MovingBot = ({ bot }) => {
   };
 
   const targetPos = useRef(getTargetPos(bot.location, bot.bot_id));
-  const isMoving = useRef(false);
+  const currentSpeed = useRef(0);
+  const walkTime = useRef(0);
 
-  // When the bot's location changes, update the target
   useEffect(() => {
     const newTarget = getTargetPos(bot.location, bot.bot_id);
     if (!newTarget.equals(targetPos.current)) {
       targetPos.current = newTarget;
-      isMoving.current = true;
     }
   }, [bot.location, bot.bot_id]);
 
   useFrame((state, delta) => {
-    if (!groupRef.current || !isMoving.current) return;
+    if (!groupRef.current) return;
 
-    // Smoothly lerp (interpolate) towards the target position
-    const speed = 4 * delta; // Movement speed
-    groupRef.current.position.lerp(targetPos.current, speed);
+    // 1. Smooth Movement (Lerp)
+    const distance = groupRef.current.position.distanceTo(targetPos.current);
+    
+    if (distance > 0.05) {
+      // Move the bot closer to the target
+      groupRef.current.position.lerp(targetPos.current, 4 * delta);
+      
+      // 2. Rotate the bot to face the walking direction
+      const angle = Math.atan2(
+        targetPos.current.x - groupRef.current.position.x,
+        targetPos.current.z - groupRef.current.position.z
+      );
+      // Smoothly rotate
+      groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, angle, 10 * delta);
 
-    // Stop moving if we are very close to the target
-    if (groupRef.current.position.distanceTo(targetPos.current) < 0.05) {
+      // 3. Bobbing animation (up and down)
+      walkTime.current += delta * 10;
+      innerRef.current.position.y = Math.abs(Math.sin(walkTime.current)) * 0.15;
+      
+    } else {
+      // Snap to target and reset bob when stopped
       groupRef.current.position.copy(targetPos.current);
-      isMoving.current = false;
+      innerRef.current.position.y = 0;
     }
   });
 
   return (
     <group ref={groupRef} position={getTargetPos(bot.location, bot.bot_id)}>
-      <Crewmate3D color={BOT_COLORS[bot.bot_id]} name={bot.name} status={bot.status} />
+      {/* innerRef is used for the bobbing so it doesn't mess up the actual floor position */}
+      <group ref={innerRef}>
+        <Crewmate3D color={BOT_COLORS[bot.bot_id]} name={bot.name} status={bot.status} />
+      </group>
     </group>
   );
 };
@@ -304,7 +319,6 @@ const Commander = ({ activeRoom, setActiveRoom, isPaused, commanderPos }) => {
     if (keys.current['a'] || keys.current['arrowleft']) ref.current.position.x -= speed;
     if (keys.current['d'] || keys.current['arrowright']) ref.current.position.x += speed;
 
-    // Update the external minimap position reference
     commanderPos.current = { x: ref.current.position.x, z: ref.current.position.z };
 
     let closestRoom = null;
@@ -333,52 +347,59 @@ const Commander = ({ activeRoom, setActiveRoom, isPaused, commanderPos }) => {
 
 // --- MINIMAP COMPONENT ---
 const Minimap = ({ bots, commanderPos }) => {
+  const [isExpanded, setIsExpanded] = useState(true);
+
   return (
-    <div className="minimap-container">
-      <div className="minimap-title">TACTICAL RADAR</div>
-      <div className="minimap-map">
-        {/* Room outlines */}
-        <div className="map-room map-bridge" title="Bridge"></div>
-        <div className="map-room map-comms" title="Comms"></div>
-        <div className="map-room map-data" title="Data"></div>
-        <div className="map-room map-strategy" title="Strategy"></div>
-        <div className="map-room map-office" title="Office"></div>
-
-        {/* Commander Dot */}
-        <div 
-          className="map-dot commander-dot" 
-          style={{ 
-            left: `calc(50% + ${commanderPos.current.x * 3}%)`, 
-            top: `calc(50% + ${commanderPos.current.z * 3}%)` 
-          }} 
-        />
-
-        {/* Bot Dots */}
-        {Object.values(bots).map(bot => {
-          let x = 0, z = 0;
-          if (bot.location === 'comms_array') { x = -8; z = -8; }
-          if (bot.location === 'data_forge') { x = 8; z = -8; }
-          if (bot.location === 'strategy_deck') { x = -8; z = 8; }
-          if (bot.location === 'office') { x = 8; z = 8; }
-          if (bot.bot_id === 'email_bot') x -= 2;
-          if (bot.bot_id === 'data_bot') z -= 2;
-          if (bot.bot_id === 'excel_bot') x += 2;
-          if (bot.bot_id === 'report_bot') z += 2;
-
-          return (
-            <div 
-              key={bot.bot_id} 
-              className="map-dot bot-dot" 
-              style={{ 
-                left: `calc(50% + ${x * 3}%)`, 
-                top: `calc(50% + ${z * 3}%)`,
-                backgroundColor: BOT_COLORS[bot.bot_id],
-                boxShadow: `0 0 8px ${BOT_COLORS[bot.bot_id]}`
-              }} 
-            />
-          );
-        })}
+    <div className={`minimap-container ${isExpanded ? 'expanded' : 'minimized'}`}>
+      <div className="minimap-header">
+        {isExpanded && <span className="minimap-title">TACTICAL RADAR</span>}
+        <button className="minimap-toggle" onClick={() => setIsExpanded(!isExpanded)}>
+          {isExpanded ? '−' : '+'}
+        </button>
       </div>
+
+      {isExpanded && (
+        <div className="minimap-map">
+          <div className="map-room map-bridge" title="Bridge"></div>
+          <div className="map-room map-comms" title="Comms"></div>
+          <div className="map-room map-data" title="Data"></div>
+          <div className="map-room map-strategy" title="Strategy"></div>
+          <div className="map-room map-office" title="Office"></div>
+
+          <div 
+            className="map-dot commander-dot" 
+            style={{ 
+              left: `calc(50% + ${commanderPos.current.x * 3}%)`, 
+              top: `calc(50% + ${commanderPos.current.z * 3}%)` 
+            }} 
+          />
+
+          {Object.values(bots).map(bot => {
+            let x = 0, z = 0;
+            if (bot.location === 'comms_array') { x = -8; z = -8; }
+            if (bot.location === 'data_forge') { x = 8; z = -8; }
+            if (bot.location === 'strategy_deck') { x = -8; z = 8; }
+            if (bot.location === 'office') { x = 8; z = 8; }
+            if (bot.bot_id === 'email_bot') x -= 2;
+            if (bot.bot_id === 'data_bot') z -= 2;
+            if (bot.bot_id === 'excel_bot') x += 2;
+            if (bot.bot_id === 'report_bot') z += 2;
+
+            return (
+              <div 
+                key={bot.bot_id} 
+                className="map-dot bot-dot" 
+                style={{ 
+                  left: `calc(50% + ${x * 3}%)`, 
+                  top: `calc(50% + ${z * 3}%)`,
+                  backgroundColor: BOT_COLORS[bot.bot_id],
+                  boxShadow: `0 0 8px ${BOT_COLORS[bot.bot_id]}`
+                }} 
+              />
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };
@@ -390,8 +411,6 @@ export default function App() {
   const [socket, setSocket] = useState(null);
   const [activeRoom, setActiveRoom] = useState(null);
   const [openRoom, setOpenRoom] = useState(null);
-  
-  // Reference to track Commander's position for the minimap
   const commanderPos = useRef({ x: 8, z: 8 });
 
   useEffect(() => {
@@ -476,7 +495,6 @@ export default function App() {
               <Commander activeRoom={activeRoom} setActiveRoom={setActiveRoom} isPaused={!!openRoom} commanderPos={commanderPos} />
             </Room>
 
-            {/* BOTS (Now using the MovingBot component) */}
             {Object.values(bots).map((bot) => (
               <MovingBot key={bot.bot_id} bot={bot} />
             ))}
@@ -487,7 +505,6 @@ export default function App() {
           </Canvas>
         </Suspense>
 
-        {/* Minimap Overlay */}
         <Minimap bots={bots} commanderPos={commanderPos} />
       </div>
 
