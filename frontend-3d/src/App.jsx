@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Box, Grid, Text, Html, Sphere, Cylinder, RoundedBox } from '@react-three/drei';
+import { OrbitControls, Box, Grid, Text, Html, RoundedBox } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import './App.css';
 
@@ -15,16 +15,30 @@ const BOT_COLORS = {
 };
 
 // --- 3D MACHINERY ---
-const BridgeHologram = ({ position }) => {
+const CommandTable = ({ position }) => {
   const ref = useRef();
-  useFrame((state, delta) => (ref.current.rotation.y += delta));
+  useFrame((state, delta) => (ref.current.rotation.y += delta * 0.5));
   return (
     <group position={position}>
-      <mesh ref={ref}>
-        <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color="#00f0ff" emissive="#00f0ff" emissiveIntensity={2} wireframe />
+      {/* Desk Base */}
+      <RoundedBox args={[2.5, 0.2, 1.5]} position={[0, -0.4, 0]} radius={0.1}>
+        <meshStandardMaterial color="#0f172a" metalness={0.8} roughness={0.2} />
+      </RoundedBox>
+      
+      {/* Hologram Base */}
+      <mesh position={[0, -0.2, 0]}>
+        <cylinderGeometry args={[0.6, 0.6, 0.1, 32]} />
+        <meshStandardMaterial color="#1e293b" metalness={0.5} />
       </mesh>
-      <pointLight color="#00f0ff" intensity={2} distance={5} />
+
+      {/* Floating Hologram */}
+      <mesh ref={ref} position={[0, 0.4, 0]}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial color="#00f0ff" emissive="#00f0ff" emissiveIntensity={2} wireframe transparent opacity={0.8} />
+      </mesh>
+      
+      {/* Light */}
+      <pointLight color="#00f0ff" intensity={3} distance={6} position={[0, 0.5, 0]} />
     </group>
   );
 };
@@ -35,13 +49,14 @@ const DataForgeCore = ({ position }) => {
   return (
     <group position={position}>
       <mesh>
-        <cylinderGeometry args={[0.5, 0.5, 1, 32]} />
-        <meshStandardMaterial color="#4da6ff" emissive="#4da6ff" emissiveIntensity={0.5} transparent opacity={0.5} />
+        <cylinderGeometry args={[0.5, 0.5, 1.5, 32]} />
+        <meshStandardMaterial color="#4da6ff" emissive="#4da6ff" emissiveIntensity={0.5} transparent opacity={0.4} />
       </mesh>
       <mesh ref={ref}>
-        <torusGeometry args={[1.2, 0.05, 16, 64]} />
+        <torusGeometry args={[1.4, 0.05, 16, 64]} />
         <meshStandardMaterial color="#00f0ff" emissive="#00f0ff" emissiveIntensity={2} />
       </mesh>
+      <pointLight color="#00f0ff" intensity={2} distance={6} />
     </group>
   );
 };
@@ -56,9 +71,21 @@ const Room = ({ position, size, color, label, children }) => {
       <Box args={[size[0], 0.1, size[2]]} position={[0, 0, 0]}>
         <meshBasicMaterial color="#00f0ff" wireframe />
       </Box>
-      <Text position={[0, 1, size[2]/2 - 0.5]} color="#00f0ff" fontSize={0.4} font="https://fonts.gstatic.com/s/orbitron/v25/yMJRMIlzdpvBhQQL_Qq7dys.woff">
+      <Text position={[0, 1.2, size[2]/2 - 0.5]} color="#00f0ff" fontSize={0.4} font="https://fonts.gstatic.com/s/orbitron/v25/yMJRMIlzdpvBhQQL_Qq7dys.woff">
         {label.toUpperCase()}
       </Text>
+      
+      {/* FLOATING TOOLTIP (Like in the video) */}
+      <Html position={[0, 2.5, size[2]/2]} center>
+        <div style={{ 
+          background: 'rgba(0, 0, 0, 0.8)', border: '1px solid #555', 
+          padding: '4px 8px', borderRadius: '4px', color: '#fff', 
+          fontFamily: 'Orbitron', fontSize: '10px', whiteSpace: 'nowrap'
+        }}>
+          PRESS [E] - {label.substring(0, 3).toUpperCase()}
+        </div>
+      </Html>
+
       {children}
     </group>
   );
@@ -68,28 +95,19 @@ const Room = ({ position, size, color, label, children }) => {
 const Crewmate3D = ({ color, name, status, isCommander }) => {
   return (
     <group>
-      {/* Body (Capsule) */}
       <mesh castShadow>
         <capsuleGeometry args={[0.35, 0.5, 8, 16]} />
-        <meshStandardMaterial color={color} roughness={0.4} metalness={0.1} />
+        <meshStandardMaterial color={color} roughness={0.4} metalness={0.2} />
       </mesh>
-      
-      {/* Backpack */}
       <RoundedBox args={[0.3, 0.4, 0.2]} position={[-0.35, 0, 0]} radius={0.05}>
-        <meshStandardMaterial color={color} roughness={0.4} metalness={0.1} />
+        <meshStandardMaterial color={color} roughness={0.4} metalness={0.2} />
       </RoundedBox>
-
-      {/* Visor Frame */}
       <RoundedBox args={[0.45, 0.25, 0.2]} position={[0.15, 0.25, 0.25]} radius={0.1}>
-        <meshStandardMaterial color="#cccccc" roughness={0.2} metalness={0.8} />
+        <meshStandardMaterial color="#888" roughness={0.2} metalness={0.9} />
       </RoundedBox>
-      
-      {/* Glass Visor */}
       <RoundedBox args={[0.4, 0.2, 0.15]} position={[0.15, 0.25, 0.35]} radius={0.08}>
-        <meshStandardMaterial color="#87ceeb" emissive="#87ceeb" emissiveIntensity={0.5} transparent opacity={0.8} roughness={0.1} metalness={0.9} />
+        <meshStandardMaterial color="#87ceeb" emissive="#87ceeb" emissiveIntensity={0.8} transparent opacity={0.9} roughness={0.1} metalness={0.8} />
       </RoundedBox>
-
-      {/* Legs */}
       <mesh position={[-0.15, -0.5, 0]}>
         <cylinderGeometry args={[0.1, 0.1, 0.2]} />
         <meshStandardMaterial color={color} />
@@ -98,21 +116,12 @@ const Crewmate3D = ({ color, name, status, isCommander }) => {
         <cylinderGeometry args={[0.1, 0.1, 0.2]} />
         <meshStandardMaterial color={color} />
       </mesh>
-
-      {/* Glowing Halo underneath */}
       <mesh position={[0, -0.65, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[0.4, 0.5, 32]} />
-        <meshBasicMaterial color={isCommander ? "#f1c40f" : color} transparent opacity={0.6} />
+        <meshBasicMaterial color={isCommander ? "#f1c40f" : color} transparent opacity={0.8} />
       </mesh>
-
-      {/* Floating Text */}
       <Html position={[0, 1.2, 0]} center>
-        <div style={{ 
-          color: isCommander ? '#f1c40f' : '#fff', 
-          fontFamily: 'Orbitron', fontSize: '10px', 
-          whiteSpace: 'nowrap', textShadow: '1px 1px 3px #000', 
-          textAlign: 'center', fontWeight: 'bold' 
-        }}>
+        <div style={{ color: isCommander ? '#f1c40f' : '#fff', fontFamily: 'Orbitron', fontSize: '10px', whiteSpace: 'nowrap', textShadow: '1px 1px 3px #000', textAlign: 'center', fontWeight: 'bold' }}>
           {name}
           {status && <><br /><span style={{ color: '#00f0ff', fontSize: '9px' }}>{status}</span></>}
         </div>
@@ -121,7 +130,7 @@ const Crewmate3D = ({ color, name, status, isCommander }) => {
   );
 };
 
-// --- THE COMMANDER (3D Model with Movement) ---
+// --- THE COMMANDER ---
 const Commander = () => {
   const ref = useRef();
   const keys = useRef({});
@@ -146,7 +155,7 @@ const Commander = () => {
   return (
     <group ref={ref} position={[8, 0.6, 8]}>
       <Crewmate3D color="#f1c40f" name="COMMANDER" isCommander={true} />
-      <pointLight color="#f1c40f" intensity={1} distance={3} position={[0, 0.5, 0]} />
+      <pointLight color="#f1c40f" intensity={2} distance={4} position={[0, 0.5, 0]} />
     </group>
   );
 };
@@ -189,14 +198,7 @@ export default function App() {
             <color attach="background" args={['#02040a']} />
             
             <ambientLight intensity={0.3} />
-            {/* Shadow-casting light */}
-            <directionalLight 
-              position={[10, 20, 10]} 
-              intensity={1} 
-              castShadow 
-              shadow-mapSize-width={2048} 
-              shadow-mapSize-height={2048} 
-            />
+            <directionalLight position={[10, 20, 10]} intensity={1} castShadow shadow-mapSize={[2048, 2048]} />
             
             <Grid 
               position={[0, -1, 0]} args={[50, 50]} cellSize={1} cellThickness={0.5} cellColor="#00f0ff" 
@@ -207,11 +209,11 @@ export default function App() {
 
             {/* ROOMS */}
             <Room position={[0, 0, 0]} size={[8, 1, 6]} color={ROOM_COLORS.bridge} label="Bridge (HQ)">
-              <BridgeHologram position={[0, 1.5, 0]} />
+              <CommandTable position={[0, 0, 0]} />
             </Room>
             <Room position={[-8, 0, -8]} size={[5, 1, 5]} color={ROOM_COLORS.comms_array} label="Comms Array" />
             <Room position={[8, 0, -8]} size={[5, 1, 5]} color={ROOM_COLORS.data_forge} label="Data Forge">
-              <DataForgeCore position={[0, 1.5, 0]} />
+              <DataForgeCore position={[0, 1, 0]} />
             </Room>
             <Room position={[-8, 0, 8]} size={[5, 1, 5]} color={ROOM_COLORS.strategy_deck} label="Strategy Deck" />
             <Room position={[8, 0, 8]} size={[5, 1, 5]} color={ROOM_COLORS.office} label="Commander's Office">
@@ -233,11 +235,7 @@ export default function App() {
 
               return (
                 <group key={bot.bot_id} position={[x, 0.6, z]}>
-                  <Crewmate3D 
-                    color={BOT_COLORS[bot.bot_id]} 
-                    name={bot.name} 
-                    status={bot.status} 
-                  />
+                  <Crewmate3D color={BOT_COLORS[bot.bot_id]} name={bot.name} status={bot.status} />
                 </group>
               );
             })}
