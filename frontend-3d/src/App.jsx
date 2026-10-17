@@ -88,7 +88,6 @@ const FloatingStatBar = ({ position, label, color, width = 1.5 }) => {
 const SecurityCamera = ({ position }) => {
   const cameraRef = useRef();
   useFrame((state) => {
-    // Pan back and forth like a real security camera
     if (cameraRef.current) {
       cameraRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 2) * 0.5;
     }
@@ -99,13 +98,11 @@ const SecurityCamera = ({ position }) => {
       <mesh ref={cameraRef}>
         <boxGeometry args={[0.4, 0.2, 0.3]} />
         <meshStandardMaterial color="#333" metalness={0.9} roughness={0.1} />
-        {/* Camera Lens */}
         <mesh position={[0, 0, 0.2]} rotation={[Math.PI / 2, 0, 0]}>
           <cylinderGeometry args={[0.1, 0.1, 0.1]} />
           <meshBasicMaterial color="#ff0000" />
         </mesh>
       </mesh>
-      {/* Red Blinking Light */}
       <mesh position={[0, 0.15, 0]}>
         <sphereGeometry args={[0.03]} />
         <meshBasicMaterial color="#ff0000" />
@@ -134,7 +131,6 @@ const CommandTable = ({ position }) => {
       </mesh>
       <pointLight color="#00f0ff" intensity={3} distance={6} position={[0, 0.5, 0]} />
       
-      {/* Camera at top right corner of the Bridge */}
       <SecurityCamera position={[3.5, 1.5, -2.5]} />
       
       <FloatingStatBar position={[0, 1.8, 0]} label="SHIP POWER" color="#00f0ff" width={2.5} />
@@ -589,16 +585,19 @@ export default function App() {
               enablePan={true}
             />
 
-            {!openRoom && Object.entries(ROOM_POSITIONS).map(([id, room]) => (
+            {/* ONLY RENDER TOOLTIP IF ACTIVE ROOM */}
+            {!openRoom && activeRoom && Object.entries(ROOM_POSITIONS)
+              .filter(([id]) => id === activeRoom)
+              .map(([id, room]) => (
               <Html key={id} position={[room.x, 3.5, room.z]} center>
                 <div style={{ 
-                  background: activeRoom === id ? 'rgba(46, 204, 113, 0.9)' : 'rgba(0, 0, 0, 0.8)', 
-                  border: activeRoom === id ? '1px solid #fff' : '1px solid #555', 
+                  background: 'rgba(46, 204, 113, 0.9)', 
+                  border: '1px solid #fff', 
                   padding: '4px 8px', borderRadius: '4px', color: '#fff', fontFamily: 'Orbitron', fontSize: '10px', 
-                  whiteSpace: 'nowrap', boxShadow: activeRoom === id ? '0 0 15px #2ecc71' : 'none',
-                  transition: 'all 0.2s', cursor: activeRoom === id ? 'pointer' : 'default'
-                }} onClick={() => { if(activeRoom === id) setOpenRoom(id); }}>
-                  {activeRoom === id ? `PRESS [E] - ${room.label.toUpperCase()}` : room.label.toUpperCase()}
+                  whiteSpace: 'nowrap', boxShadow: '0 0 15px #2ecc71',
+                  transition: 'all 0.2s', cursor: 'pointer'
+                }} onClick={() => setOpenRoom(id)}>
+                  PRESS [E] - {room.label.toUpperCase()}
                 </div>
               </Html>
             ))}
