@@ -14,10 +14,18 @@ const BOT_COLORS = {
   email_bot: '#ff0000', data_bot: '#ffff00', excel_bot: '#0000ff', report_bot: '#00ff00'
 };
 
+// The exact 3D coordinates of each room to check distance
+const ROOM_POSITIONS = {
+  bridge: { x: 0, z: 0, label: "Bridge (HQ)" },
+  comms_array: { x: -8, z: -8, label: "Comms Array" },
+  data_forge: { x: 8, z: -8, label: "Data Forge" },
+  strategy_deck: { x: -8, z: 8, label: "Strategy Deck" },
+  office: { x: 8, z: 8, label: "Commander's Office" }
+};
+
 // --- FLOATING PARTICLES ---
 const DataParticles = () => {
   const pointsRef = useRef();
-  
   const positions = React.useMemo(() => {
     const pos = new Float32Array(600);
     for (let i = 0; i < 600; i += 3) {
@@ -29,9 +37,7 @@ const DataParticles = () => {
   }, []);
 
   useFrame((state, delta) => {
-    if (pointsRef.current) {
-      pointsRef.current.rotation.y += delta * 0.02;
-    }
+    if (pointsRef.current) pointsRef.current.rotation.y += delta * 0.02;
   });
 
   return (
@@ -87,57 +93,37 @@ const DataForgeCore = ({ position }) => {
 // --- ROOM COMPONENT ---
 const Room = ({ position, size, color, label, children }) => {
   const [width, , depth] = size;
-  
-  // Create low walls around the room edges
   const wallHeight = 0.8;
   const wallThick = 0.1;
 
   return (
     <group position={position}>
-      {/* Solid Floor */}
       <Box args={[width, 0.5, depth]} position={[0, -0.25, 0]}>
         <meshStandardMaterial color={color} transparent opacity={0.9} />
       </Box>
       
-      {/* Neon Floor Border */}
       <Box args={[width, 0.1, depth]} position={[0, 0, 0]}>
         <meshBasicMaterial color="#00f0ff" wireframe />
       </Box>
 
       {/* Low Glowing Walls */}
-      {/* Back Wall */}
       <mesh position={[0, wallHeight/2, -depth/2 + wallThick]}>
         <boxGeometry args={[width, wallHeight, wallThick]} />
         <meshBasicMaterial color="#00f0ff" transparent opacity={0.3} />
       </mesh>
-      {/* Left Wall */}
       <mesh position={[-width/2 + wallThick, wallHeight/2, 0]}>
         <boxGeometry args={[wallThick, wallHeight, depth]} />
         <meshBasicMaterial color="#00f0ff" transparent opacity={0.2} />
       </mesh>
-      {/* Right Wall */}
       <mesh position={[width/2 - wallThick, wallHeight/2, 0]}>
         <boxGeometry args={[wallThick, wallHeight, depth]} />
         <meshBasicMaterial color="#00f0ff" transparent opacity={0.2} />
       </mesh>
       
-      {/* Room Label */}
       <Text position={[0, 0.6, depth/2 - 0.5]} color="#00f0ff" fontSize={0.3} font="https://fonts.gstatic.com/s/orbitron/v25/yMJRMIlzdpvBhQQL_Qq7dys.woff">
         {label.toUpperCase()}
       </Text>
       
-      {/* Floating Tooltip with Full Name */}
-      <Html position={[0, 3.5, depth/2]} center>
-        <div style={{ 
-          background: 'rgba(0, 0, 0, 0.8)', border: '1px solid #555', 
-          padding: '4px 8px', borderRadius: '4px', color: '#fff', 
-          fontFamily: 'Orbitron', fontSize: '10px', whiteSpace: 'nowrap',
-          boxShadow: '0 0 10px rgba(0, 240, 255, 0.2)'
-        }}>
-          PRESS [E] - {label.toUpperCase()}
-        </div>
-      </Html>
-
       {children}
     </group>
   );
@@ -182,18 +168,24 @@ const Crewmate3D = ({ color, name, status, isCommander }) => {
   );
 };
 
-// --- THE COMMANDER ---
-const Commander = () => {
+// --- THE COMMANDER (Now with interaction logic) ---
+const Commander = ({ activeRoom, setActiveRoom, openRoom, setOpenRoom }) => {
   const ref = useRef();
   const keys = useRef({});
   
   useEffect(() => {
-    const down = (e) => keys.current[e.key.toLowerCase()] = true;
+    const down = (e) => {
+        keys.current[e.key.toLowerCase()] = true;
+        // Check for "E" key press
+        if (e.key.toLowerCase() === 'e' && activeRoom) {
+            setOpenRoom(activeRoom);
+        }
+    };
     const up = (e) => keys.current[e.key.toLowerCase()] = false;
     window.addEventListener('keydown', down);
     window.addEventListener('keyup', up);
     return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); };
-  }, []);
+  }, [activeRoom, setOpenRoom]);
 
   useFrame((state, delta) => {
     if (!ref.current) return;
@@ -202,6 +194,24 @@ const Commander = () => {
     if (keys.current['s'] || keys.current['arrowdown']) ref.current.position.z += speed;
     if (keys.current['a'] || keys.current['arrowleft']) ref.current.position.x -= speed;
     if (keys.current['d'] || keys.current['arrowright']) ref.current.position.x += speed;
+
+    // Proximity Check
+    let closestRoom = null;
+    let minDist = 4; // How close you need to be
+
+    Object.entries(ROOM_POSITIONS).forEach(([id, pos]) => {
+      const dx = ref.current.position.x - pos.x;
+      const dz = ref.current.position.z - pos.z;
+      const dist = Math.sqrt(dx*dx + dz*dz);
+      if (dist < minDist) {
+        minDist = dist;
+        closestRoom = id;
+      }
+    });
+
+    if (closestRoom !== activeRoom) {
+        setActiveRoom(closestRoom);
+    }
   });
 
   return (
@@ -217,6 +227,10 @@ export default function App() {
   const [bots, setBots] = useState({});
   const [approvals, setApprovals] = useState([]);
   const [socket, setSocket] = useState(null);
+  
+  // UI States for Interaction
+  const [activeRoom, setActiveRoom] = useState(null);
+  const [openRoom, setOpenRoom] = useState(null);
 
   useEffect(() => {
     const ws = new WebSocket(WS_URL);
@@ -258,8 +272,24 @@ export default function App() {
             />
 
             <DataParticles />
-
             <OrbitControls makeDefault maxPolarAngle={Math.PI / 2.2} minDistance={10} maxDistance={40} />
+
+            {/* DYNAMIC TOOLTIPS */}
+            {Object.entries(ROOM_POSITIONS).map(([id, room]) => (
+              <Html key={id} position={[room.x, 3.5, room.z]} center>
+                <div style={{ 
+                  background: activeRoom === id ? 'rgba(46, 204, 113, 0.9)' : 'rgba(0, 0, 0, 0.8)', 
+                  border: activeRoom === id ? '1px solid #fff' : '1px solid #555', 
+                  padding: '4px 8px', borderRadius: '4px', 
+                  color: '#fff', fontFamily: 'Orbitron', fontSize: '10px', 
+                  whiteSpace: 'nowrap', boxShadow: activeRoom === id ? '0 0 15px #2ecc71' : 'none',
+                  transition: 'all 0.2s',
+                  cursor: activeRoom === id ? 'pointer' : 'default'
+                }} onClick={() => { if(activeRoom === id) setOpenRoom(id); }}>
+                  {activeRoom === id ? `PRESS [E] - ${room.label.toUpperCase()}` : room.label.toUpperCase()}
+                </div>
+              </Html>
+            ))}
 
             {/* ROOMS */}
             <Room position={[0, 0, 0]} size={[8, 1, 6]} color={ROOM_COLORS.bridge} label="Bridge (HQ)">
@@ -271,7 +301,7 @@ export default function App() {
             </Room>
             <Room position={[-8, 0, 8]} size={[5, 1, 5]} color={ROOM_COLORS.strategy_deck} label="Strategy Deck" />
             <Room position={[8, 0, 8]} size={[5, 1, 5]} color={ROOM_COLORS.office} label="Commander's Office">
-              <Commander />
+              <Commander activeRoom={activeRoom} setActiveRoom={setActiveRoom} openRoom={openRoom} setOpenRoom={setOpenRoom} />
             </Room>
 
             {/* BOTS */}
@@ -301,6 +331,7 @@ export default function App() {
         </Suspense>
       </div>
 
+      {/* HUD UI */}
       <div className="hud-panel">
         <div className="profile-card">
           <div style={{ color: '#00f0ff', fontFamily: 'Orbitron' }}>⚔️ COMMANDER</div>
@@ -332,6 +363,27 @@ export default function App() {
           ))}
         </div>
       </div>
+
+      {/* --- ROOM INTERACTION MODAL --- */}
+      {openRoom && (
+        <div className="room-modal-overlay" onClick={() => setOpenRoom(null)}>
+          <div className="room-modal" onClick={e => e.stopPropagation()}>
+            <h2>{ROOM_POSITIONS[openRoom].label}</h2>
+            <p>Terminal Access Granted. Welcome, Commander.</p>
+            
+            {/* Placeholder for room specific data */}
+            <div className="terminal-data">
+              {openRoom === 'data_forge' && <p>Analyzing CSV... 200 rows processed.</p>}
+              {openRoom === 'comms_array' && <p>Inbox: 4 unread messages.</p>}
+              {openRoom === 'strategy_deck' && <p>Active reports: 2.</p>}
+              {openRoom === 'bridge' && <p>Ship status: All systems nominal.</p>}
+              {openRoom === 'office' && <p>Commander's personal logs.</p>}
+            </div>
+            
+            <button className="close-btn" onClick={() => setOpenRoom(null)}>CLOSE TERMINAL [ESC]</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
