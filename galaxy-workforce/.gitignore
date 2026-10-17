@@ -1,0 +1,6 @@
+__pycache__/
+.venv/
+.env
+backend/output/*
+!backend/output/.gitkeep
+node_modules/

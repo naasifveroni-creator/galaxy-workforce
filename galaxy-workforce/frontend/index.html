@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Galaxy Workforce</title>
+  <style>
+    body { margin:0; background:#05060f; color:#dfe6ff; font-family:system-ui,sans-serif; display:flex; }
+    #game { flex:1; }
+    #hud { width:300px; padding:12px; background:#0b1020; border-left:1px solid #1f2a44; overflow:auto; }
+    button { background:#1f2a44; color:#dfe6ff; border:0; padding:8px 10px; margin:2px 0; border-radius:6px; cursor:pointer; width:100%; }
+    button:hover { background:#2f3d66; }
+    .card { background:#141c33; border:1px solid #f1c40f; border-radius:8px; padding:10px; margin:8px 0; }
+    .row { display:flex; gap:6px; } .approve { background:#1e8449; } .reject { background:#922b21; }
+    pre { white-space:pre-wrap; font-size:11px; max-height:140px; overflow:auto; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+</head>
+<body>
+  <div id="game"></div>
+  <div id="hud">
+    <h3>Commander HUD</h3>
+    <div id="conn">connecting...</div>
+    <h4>Dispatch</h4>
+    <div id="controls"></div>
+    <h4>Approvals</h4>
+    <div id="approvals"></div>
+  </div>
+  <script src="config.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
