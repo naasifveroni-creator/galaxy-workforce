@@ -81,7 +81,6 @@ function ensureBot(b) {
   const g = scene.add.graphics();
   const color = BOT_COLORS[b.bot_id] || 0xffffff;
   
-  // Draw the Among Us character
   g.fillStyle(color, 1);
   g.fillRoundedRect(-12, -16, 24, 32, 8);
   g.fillRoundedRect(-18, -6, 10, 18, 4);
@@ -136,39 +135,78 @@ new Phaser.Game({
     create() {
       scene = this;
 
-      // 1. Draw the Starfield Background
+      // 1. Starfield Background
       const stars = this.add.graphics();
-      for (let i = 0; i < 100; i++) {
+      for (let i = 0; i < 150; i++) {
         stars.fillStyle(0xffffff, Math.random() * 0.8 + 0.2);
         stars.fillCircle(Math.random() * 960, Math.random() * 640, Math.random() * 1.5);
       }
 
-      // 2. Draw the Grid
-      const g = this.add.graphics().lineStyle(1, 0x121a33, 0.5);
+      // 2. Ship Floor Grid (Corridors)
+      const g = this.add.graphics().lineStyle(1, 0x1a2b4c, 0.8);
       for (let x = 0; x <= 12; x++) g.lineBetween(x * TILE, 0, x * TILE, 8 * TILE);
       for (let y = 0; y <= 8; y++)  g.lineBetween(0, y * TILE, 12 * TILE, y * TILE);
-      
-      // 3. Draw the Rooms with Glowing Borders
-      Object.values(ROOMS).forEach(r => {
-        const rect = this.add.rectangle(r.col * TILE, r.row * TILE, r.w * TILE, r.h * TILE, r.color, 0.85)
-          .setOrigin(0).setStrokeStyle(2, 0x8899cc);
-          
-        // Add a glowing pulse to the rooms
-        this.tweens.add({
-          targets: rect,
-          alpha: 0.6,
-          yoyo: true,
-          repeat: -1,
-          duration: 2000 + Math.random() * 1000
-        });
 
-        this.add.text(r.col * TILE + 8, r.row * TILE + 6, r.label, { fontSize: "13px", color: "#fff" });
-      });
+      // 3. Draw Detailed Rooms
+      
+      // --- BRIDGE (HQ) ---
+      const bridge = ROOMS['bridge'];
+      const bx = bridge.col * TILE;
+      const by = bridge.row * TILE;
+      // Floor
+      this.add.rectangle(bx, by, bridge.w * TILE, bridge.h * TILE, 0x1e293b, 0.9).setOrigin(0);
+      // Command Console
+      this.add.rectangle(bx + 40, by + 40, 160, 60, 0x334155).setOrigin(0);
+      this.add.rectangle(bx + 50, by + 50, 140, 40, 0x0f172a).setOrigin(0);
+      // Hologram
+      const holo = this.add.circle(bx + 120, by + 30, 15, 0x4da6ff, 0.4);
+      this.tweens.add({ targets: holo, alpha: 0.8, scale: 1.2, yoyo: true, repeat: -1, duration: 1500 });
+      this.add.text(bx + 10, by + 10, "BRIDGE (HQ)", { fontSize: "12px", color: "#4da6ff", fontWeight: "bold" });
+
+      // --- COMMS ARRAY ---
+      const comms = ROOMS['comms_array'];
+      const cx = comms.col * TILE;
+      const cy = comms.row * TILE;
+      this.add.rectangle(cx, cy, comms.w * TILE, comms.h * TILE, 0x451a1a, 0.9).setOrigin(0);
+      // Server Racks
+      for(let i=0; i<3; i++) {
+        this.add.rectangle(cx + 30 + (i*50), cy + 50, 40, 100, 0x1c0c0c).setOrigin(0).setStrokeStyle(1, 0x7b241c);
+        // Blinking lights
+        for(let j=0; j<4; j++) {
+          const light = this.add.circle(cx + 45 + (i*50), cy + 65 + (j*20), 3, 0xff4d4d);
+          this.tweens.add({ targets: light, alpha: 0, yoyo: true, repeat: -1, duration: 500 + Math.random() * 500 });
+        }
+      }
+      this.add.text(cx + 10, cy + 10, "COMMS ARRAY", { fontSize: "12px", color: "#ff4d4d", fontWeight: "bold" });
+
+      // --- DATA FORGE ---
+      const data = ROOMS['data_forge'];
+      const dx = data.col * TILE;
+      const dy = data.row * TILE;
+      this.add.rectangle(dx, dy, data.w * TILE, data.h * TILE, 0x0f3a4d, 0.9).setOrigin(0);
+      // Holographic Data Projector
+      this.add.rectangle(dx + 60, dy + 60, 180, 80, 0x1b4f72).setOrigin(0);
+      this.add.rectangle(dx + 70, dy + 70, 160, 60, 0x051420).setOrigin(0);
+      // Data lines
+      for(let i=0; i<8; i++) {
+        const line = this.add.rectangle(dx + 80, dy + 80 + (i*6), 140, 2, 0x4da6ff, 0.5).setOrigin(0);
+        this.tweens.add({ targets: line, width: Math.random() * 100 + 40, yoyo: true, repeat: -1, duration: 1000 + Math.random() * 1000 });
+      }
+      this.add.text(dx + 10, dy + 10, "DATA FORGE", { fontSize: "12px", color: "#4da6ff", fontWeight: "bold" });
+
+      // --- STRATEGY DECK ---
+      const strat = ROOMS['strategy_deck'];
+      const sx = strat.col * TILE;
+      const sy = strat.row * TILE;
+      this.add.rectangle(sx, sy, strat.w * TILE, strat.h * TILE, 0x1a3d1a, 0.9).setOrigin(0);
+      // War Table
+      this.add.ellipse(sx + 150, sy + 120, 200, 100, 0x0f2410).setStrokeStyle(2, 0x2ecc71);
+      this.add.circle(sx + 150, sy + 120, 30, 0x2ecc71, 0.3);
+      this.add.text(sx + 10, sy + 10, "STRATEGY DECK", { fontSize: "12px", color: "#2ecc71", fontWeight: "bold" });
 
       // 4. Add the Commander Avatar
-      const bridge = ROOMS['bridge'];
-      const startX = (bridge.col + bridge.w / 2) * TILE;
-      const startY = (bridge.row + bridge.h / 2) * TILE;
+      const startX = bx + (bridge.w * TILE / 2);
+      const startY = by + (bridge.h * TILE / 2);
       
       this.commander = this.add.sprite(startX, startY, 'commander', 4).setDepth(20).setScale(1.2);
       
@@ -194,13 +232,12 @@ new Phaser.Game({
         repeat: -1
       });
 
-      // 5. Commander Abilities: The Scanner
+      // 5. Commander Scanner Ability
       this.scanner = this.add.circle(startX, startY, 10, 0x4da6ff, 0.5).setDepth(15);
       this.scanner.setVisible(false);
       this.scanTween = null;
 
       this.input.keyboard.on('keydown-SPACE', () => {
-        // Play the scanner effect
         this.scanner.setPosition(this.commander.x, this.commander.y);
         this.scanner.setRadius(10);
         this.scanner.setVisible(true);
@@ -216,21 +253,6 @@ new Phaser.Game({
           onComplete: () => {
             this.scanner.setVisible(false);
             this.scanner.setAlpha(0.5);
-          }
-        });
-
-        // Light up the rooms briefly
-        Object.keys(ROOMS).forEach(roomId => {
-          if (bots[roomId]) {
-            // Flash the label of any bot in this room
-            const bot = bots[roomId];
-            this.tweens.add({
-              targets: bot.label,
-              color: '#f1c40f',
-              yoyo: true,
-              repeat: 3,
-              duration: 200
-            });
           }
         });
       });
