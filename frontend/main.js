@@ -62,6 +62,7 @@ const roomCenter = (id, botId) => {
   return { x: (r.col + r.w / 2) * TILE + ox, y: (r.row + r.h / 2) * TILE + oy };
 };
 
+// Using frame numbers based on the 6-column Phaser sprite sheet
 const BOT_FRAMES = {
   email_bot: { idle: 0, walk: [0, 1, 2, 3, 4, 5] },      // Red
   excel_bot: { idle: 6, walk: [6, 7, 8, 9, 10, 11] },    // Blue
@@ -75,8 +76,6 @@ function ensureBot(b) {
   const p = roomCenter(b.location || "bridge", b.bot_id);
   
   const frames = BOT_FRAMES[b.bot_id] || BOT_FRAMES.email_bot;
-  
-  // Made scale 1.0 so they are nice and big
   const sprite = scene.add.sprite(p.x, p.y, "crew", frames.idle).setDepth(10).setScale(1.0);
 
   const label = scene.add.text(p.x, p.y - 35, b.name, { fontSize: "12px", color: "#fff", fontWeight: "bold", stroke: "#000", strokeThickness: 3 }).setOrigin(0.5).setDepth(11);
@@ -134,7 +133,8 @@ new Phaser.Game({
   backgroundColor: "#05060f",
   scene: {
     preload() {
-      this.load.spritesheet('crew', 'https://labs.phaser.io/assets/sprites/amongus.png', { frameWidth: 64, frameHeight: 64 });
+      // THIS is the permanent, official Phaser link for Among Us characters.
+      this.load.spritesheet('crew', 'https://raw.githubusercontent.com/photonstorm/phaser3-examples/master/public/assets/animations/amongus.png', { frameWidth: 64, frameHeight: 64 });
     },
     create() {
       scene = this;
