@@ -15,7 +15,6 @@
         #map {
             position: relative; width: 800px; height: 600px; border: 1px solid #333;
             background: url('https://www.transparenttextures.com/patterns/stardust.png');
-            /* Add a subtle grid to the map */
             background-image: linear-gradient(#1a1a1a 1px, transparent 1px), linear-gradient(90deg, #1a1a1a 1px, transparent 1px);
             background-size: 40px 40px;
         }
@@ -63,21 +62,13 @@
         .bot-body { 
             width: 32px; height: 32px; border-radius: 50%; 
             position: relative; display: flex; justify-content: center; align-items: center;
-            /* Visor effect */
             background: radial-gradient(circle at 30% 30%, #fff, transparent 40%), var(--bot-color);
             box-shadow: 0 0 15px var(--bot-color), inset -5px -5px 15px rgba(0,0,0,0.5);
             border: 2px solid rgba(255, 255, 255, 0.8);
         }
 
-        /* Walking bob animation */
-        .bot-container.walking .bot-body {
-            animation: bob 0.3s infinite alternate;
-        }
-
-        /* Working pulse animation */
-        .bot-container.working .bot-body {
-            animation: pulse 1s infinite alternate;
-        }
+        .bot-container.walking .bot-body { animation: bob 0.3s infinite alternate; }
+        .bot-container.working .bot-body { animation: pulse 1s infinite alternate; }
 
         @keyframes bob {
             from { transform: translateY(0px) scale(1); }
@@ -89,38 +80,26 @@
             to { box-shadow: 0 0 30px var(--bot-color), inset -5px -5px 15px rgba(0,0,0,0.5); transform: scale(1.1); }
         }
 
-        .bot-label { 
-            position: absolute; top: -25px; white-space: nowrap; color: #fff; 
-            font-size: 10px; font-weight: bold; text-shadow: 1px 1px 3px black, 0 0 5px black;
-        }
-        
-        .bot-status {
-            position: absolute; bottom: -20px; white-space: nowrap; color: #a9b7d0;
-            font-size: 9px; text-transform: uppercase; letter-spacing: 1px;
-        }
+        .bot-label { position: absolute; top: -25px; white-space: nowrap; color: #fff; font-size: 10px; font-weight: bold; text-shadow: 1px 1px 3px black, 0 0 5px black; }
+        .bot-status { position: absolute; bottom: -20px; white-space: nowrap; color: #a9b7d0; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; }
     </style>
 </head>
 <body>
 
-    <!-- The Galaxy Map -->
     <div id="game-view">
         <div id="map">
-            <!-- Rooms -->
             <div class="room" style="top: 0; left: 0; width: 300px; height: 200px; background: rgba(69, 26, 26, 0.5);">Comms Array</div>
             <div class="room" style="top: 0; right: 0; width: 300px; height: 200px; background: rgba(15, 58, 77, 0.5);">Data Forge</div>
             <div class="room" style="bottom: 0; left: 0; width: 300px; height: 200px; background: rgba(26, 61, 26, 0.5);">Strategy Deck</div>
             <div class="room" style="bottom: 50px; left: 250px; width: 300px; height: 150px; background: rgba(30, 41, 59, 0.8); border-color: #4da6ff;">Bridge (HQ)</div>
-            <!-- Bots will spawn here -->
         </div>
     </div>
 
-    <!-- The HUD -->
     <div id="hud">
         <div>
             <h2>Commander HUD</h2>
             <div id="connection-status" style="font-size: 12px; color: #f1c40f;">connecting...</div>
         </div>
-
         <div>
             <h3>Dispatch</h3>
             <div style="display: flex; flex-direction: column; gap: 10px;">
@@ -130,7 +109,6 @@
                 <button onclick="sendDispatch('report_bot')">▶ Run ReportBot</button>
             </div>
         </div>
-
         <div style="flex: 1; overflow-y: auto;">
             <h3>Approvals</h3>
             <div id="approval-container" style="display: flex; flex-direction: column; gap: 10px;"></div>
@@ -138,12 +116,11 @@
     </div>
 
     <script>
-        // REPLACE THIS URL WITH YOUR ACTUAL CODESPACE URL IF NEEDED
         const WS_URL = "wss://orange-system-g4w4gq7r9gxxcw7q-8000.app.github.dev/ws";
         let ws;
         let bots = {}; 
+        let activeTasks = {}; // <-- NEW: Stores task_ids linked to bot_ids
 
-        // Coordinates based on the center of each room box
         const ROOMS = {
             bridge: { x: 400, y: 475 },
             comms_array: { x: 150, y: 100 },
@@ -179,31 +156,24 @@
         function updateBot(data) {
             let botEl = bots[data.bot_id];
             
-            // 1. Create the bot DOM elements if they don't exist yet
             if (!botEl) {
                 botEl = document.createElement('div');
                 botEl.className = 'bot-container';
                 botEl.style.setProperty('--bot-color', data.color);
-                
                 botEl.innerHTML = `
                     <div class="bot-label">${data.name}</div>
                     <div class="bot-body"></div>
                     <div class="bot-status">${data.status}</div>
                 `;
-                
-                // Start them slightly offset in the bridge so they aren't stacked
                 const offset = data.bot_id === 'email_bot' ? -60 : data.bot_id === 'data_bot' ? -20 : data.bot_id === 'excel_bot' ? 20 : 60;
                 botEl.style.left = (ROOMS.bridge.x + offset) + 'px';
                 botEl.style.top = ROOMS.bridge.y + 'px';
-                
                 document.getElementById('map').appendChild(botEl);
                 bots[data.bot_id] = botEl;
             }
 
-            // 2. Update the text status
             botEl.querySelector('.bot-status').innerText = data.status.replace('_', ' ');
 
-            // 3. Manage Animations
             botEl.classList.remove('walking', 'working');
             if (data.status === 'walking') {
                 botEl.classList.add('walking');
@@ -211,7 +181,6 @@
                 botEl.classList.add('working');
             }
 
-            // 4. Move the bot
             const room = ROOMS[data.location] || ROOMS.bridge;
             const offset = data.bot_id === 'email_bot' ? -60 : data.bot_id === 'data_bot' ? -20 : data.bot_id === 'excel_bot' ? 20 : 60;
             
@@ -224,6 +193,9 @@
             const card = document.createElement('div');
             card.className = 'approval-card';
             card.id = `card-${data.bot_id}`;
+            
+            // THE CRITICAL FIX: Save the task_id from the backend
+            activeTasks[data.bot_id] = data.task_id;
             
             let preview = data.preview ? JSON.stringify(data.preview, null, 2) : "No preview data.";
             
@@ -247,7 +219,16 @@
 
         function sendApproval(botId, isApproved) {
             if (ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({ type: 'APPROVE_ACTION', bot_id: botId, approved: isApproved }));
+                // THE CRITICAL FIX: Send the task_id back to the Python server
+                const taskId = activeTasks[botId];
+                
+                ws.send(JSON.stringify({ 
+                    type: isApproved ? 'APPROVE_ACTION' : 'REJECT_ACTION',
+                    bot_id: botId,
+                    task_id: taskId, // <-- Sends the required task_id
+                    approved: isApproved 
+                }));
+                
                 const card = document.getElementById(`card-${botId}`);
                 if (card) card.remove();
             }
