@@ -142,80 +142,108 @@ new Phaser.Game({
         stars.fillCircle(Math.random() * 960, Math.random() * 640, Math.random() * 1.5);
       }
 
-      // 2. Ship Corridor Grid (Very subtle so it doesn't look like graph paper)
-      const g = this.add.graphics().lineStyle(1, 0x1a2b4c, 0.2);
+      // 2. Ship Corridor Grid
+      const g = this.add.graphics().lineStyle(1, 0x1a2b4c, 0.3);
       for (let x = 0; x <= 12; x++) g.lineBetween(x * TILE, 0, x * TILE, 8 * TILE);
       for (let y = 0; y <= 8; y++)  g.lineBetween(0, y * TILE, 12 * TILE, y * TILE);
 
-      // 3. Build the Rooms
-      Object.values(ROOMS).forEach(r => {
-        const x = r.col * TILE;
-        const y = r.row * TILE;
-        const w = r.w * TILE;
-        const h = r.h * TILE;
-
-        // Base Color Fill
-        this.add.rectangle(x, y, w, h, r.color, 0.85).setOrigin(0);
-        
-        // Floor Detail Lines (gives it a "deck plate" look instead of a grid)
-        for(let i=0; i<w; i+=40) {
-            this.add.line(x+i, y, 0, 0, 0, h, 0x000000, 0.1);
-        }
-        for(let i=0; i<h; i+=40) {
-            this.add.line(x, y+i, 0, 0, w, 0, 0x000000, 0.1);
-        }
-
-        // Thick Metal Walls (3D Effect)
-        this.add.rectangle(x, y, w, 6, 0x555555).setOrigin(0); // Top
-        this.add.rectangle(x, y + h - 6, w, 6, 0x222222).setOrigin(0); // Bottom
-        this.add.rectangle(x, y, 6, h, 0x444444).setOrigin(0); // Left
-        this.add.rectangle(x + w - 6, y, 6, h, 0x333333).setOrigin(0); // Right
-
-        // Sci-Fi Room Signage
-        this.add.text(x + 15, y + 15, r.label, { 
-          fontSize: "12px", color: "#fff", fontWeight: "bold", 
-          stroke: "#000", strokeThickness: 3, backgroundColor: "rgba(0,0,0,0.6)", padding: { x: 6, y: 4 } 
-        }).setDepth(5);
-      });
-
-      // --- MACHINERY (Set to Depth 2 so they sit on the floor, behind the bots) ---
-      
-      // Bridge Hologram
+      // ---------------------------------------------------------
+      // ROOM 1: THE BRIDGE (Command Center)
+      // ---------------------------------------------------------
       const bridge = ROOMS['bridge'];
-      const bx = bridge.col * TILE + (bridge.w * TILE / 2);
-      const by = bridge.row * TILE + (bridge.h * TILE / 2);
-      const holo = this.add.circle(bx, by - 20, 20, 0x4da6ff, 0.2).setDepth(2);
-      this.tweens.add({ targets: holo, alpha: 0.5, scale: 1.2, yoyo: true, repeat: -1, duration: 1500 });
+      const bx = bridge.col * TILE;
+      const by = bridge.row * TILE;
+      const bw = bridge.w * TILE;
+      const bh = bridge.h * TILE;
 
-      // Comms Array Server Lights
+      // Floor & Walls
+      this.add.rectangle(bx + 4, by + 4, bw, bh, 0x000000, 0.8).setOrigin(0); // Shadow
+      this.add.rectangle(bx, by, bw, bh, 0x1e293b, 1).setOrigin(0);
+      this.add.rectangle(bx, by, bw, 8, 0x4da6ff).setOrigin(0); // Neon Top Wall
+      this.add.rectangle(bx, by, 8, bh, 0x4da6ff).setOrigin(0); // Neon Left Wall
+      this.add.rectangle(bx + bw - 8, by, 8, bh, 0x1e293b).setOrigin(0);
+      this.add.rectangle(bx, by + bh - 8, bw, 8, 0x0f172a).setOrigin(0);
+
+      // Command Console
+      this.add.rectangle(bx + 30, by + 30, bw - 60, 40, 0x334155).setOrigin(0).setStrokeStyle(1, 0x4da6ff);
+      this.add.rectangle(bx + 40, by + 40, bw - 80, 20, 0x0f172a).setOrigin(0);
+      this.add.text(bx + 10, by + 10, "BRIDGE (HQ)", { fontSize: "12px", color: "#4da6ff", fontWeight: "bold" });
+
+      // Hologram
+      const holo = this.add.circle(bx + bw/2, by + bh - 30, 20, 0x4da6ff, 0.3);
+      this.tweens.add({ targets: holo, alpha: 0.8, scale: 1.3, yoyo: true, repeat: -1, duration: 1500 });
+
+      // ---------------------------------------------------------
+      // ROOM 2: COMMS ARRAY (Server Room)
+      // ---------------------------------------------------------
       const comms = ROOMS['comms_array'];
-      const cx = comms.col * TILE + 40;
-      const cy = comms.row * TILE + 50;
-      for(let i=0; i<3; i++) {
-        for(let j=0; j<3; j++) {
-          const light = this.add.circle(cx + (i*40), cy + (j*25), 4, 0xff4d4d).setDepth(2);
-          this.tweens.add({ targets: light, alpha: 0, yoyo: true, repeat: -1, duration: 500 + Math.random() * 500 });
+      const cx = comms.col * TILE;
+      const cy = comms.row * TILE;
+      const cw = comms.w * TILE;
+      const ch = comms.h * TILE;
+
+      this.add.rectangle(cx + 4, cy + 4, cw, ch, 0x000000, 0.8).setOrigin(0);
+      this.add.rectangle(cx, cy, cw, ch, 0x451a1a, 1).setOrigin(0);
+      this.add.rectangle(cx, cy, cw, 8, 0xff4d4d).setOrigin(0); // Neon Wall
+      
+      // Server Racks
+      for (let i = 0; i < 3; i++) {
+        this.add.rectangle(cx + 30 + (i*60), cy + 50, 40, 120, 0x1c0c0c).setOrigin(0).setStrokeStyle(1, 0x7b241c);
+        for (let j = 0; j < 5; j++) {
+          const light = this.add.circle(cx + 50 + (i*60), cy + 65 + (j*20), 3, 0xff4d4d);
+          this.tweens.add({ targets: light, alpha: 0, yoyo: true, repeat: -1, duration: 300 + Math.random() * 800 });
         }
       }
+      this.add.text(cx + 10, cy + 10, "COMMS ARRAY", { fontSize: "12px", color: "#ff4d4d", fontWeight: "bold" });
 
-      // Data Forge Rotating Rings
+      // ---------------------------------------------------------
+      // ROOM 3: DATA FORGE (Data Core Room)
+      // ---------------------------------------------------------
       const data = ROOMS['data_forge'];
-      const dx = data.col * TILE + (data.w * TILE / 2);
-      const dy = data.row * TILE + (data.h * TILE / 2);
-      const ring1 = this.add.circle(dx, dy, 40, 0x000000, 0).setStrokeStyle(1, 0x4da6ff, 0.4).setDepth(2);
+      const dx = data.col * TILE;
+      const dy = data.row * TILE;
+      const dw = data.w * TILE;
+      const dh = data.h * TILE;
+
+      this.add.rectangle(dx + 4, dy + 4, dw, dh, 0x000000, 0.8).setOrigin(0);
+      this.add.rectangle(dx, dy, dw, dh, 0x0f3a4d, 1).setOrigin(0);
+      this.add.rectangle(dx, dy, dw, 8, 0x4da6ff).setOrigin(0);
+
+      // Central Data Core
+      this.add.circle(dx + dw/2, dy + dh/2, 60, 0x051420).setStrokeStyle(2, 0x4da6ff);
+      const ring1 = this.add.circle(dx + dw/2, dy + dh/2, 45, 0x000000, 0).setStrokeStyle(1, 0x4da6ff, 0.8);
       this.tweens.add({ targets: ring1, angle: 360, repeat: -1, duration: 4000 });
-      const ring2 = this.add.circle(dx, dy, 60, 0x000000, 0).setStrokeStyle(1, 0x4da6ff, 0.2).setDepth(2);
-      this.tweens.add({ targets: ring2, angle: -360, repeat: -1, duration: 6000 });
+      const ring2 = this.add.circle(dx + dw/2, dy + dh/2, 30, 0x000000, 0).setStrokeStyle(1, 0x87ceeb, 0.8);
+      this.tweens.add({ targets: ring2, angle: -360, repeat: -1, duration: 3000 });
 
-      // Strategy Deck War Table
+      this.add.text(dx + 10, dy + 10, "DATA FORGE", { fontSize: "12px", color: "#4da6ff", fontWeight: "bold" });
+
+      // ---------------------------------------------------------
+      // ROOM 4: STRATEGY DECK (War Room)
+      // ---------------------------------------------------------
       const strat = ROOMS['strategy_deck'];
-      const sx = strat.col * TILE + (strat.w * TILE / 2);
-      const sy = strat.row * TILE + (strat.h * TILE / 2);
-      this.add.ellipse(sx, sy, 160, 80, 0x0f2410).setStrokeStyle(2, 0x2ecc71).setDepth(2);
+      const sx = strat.col * TILE;
+      const sy = strat.row * TILE;
+      const sw = strat.w * TILE;
+      const sh = strat.h * TILE;
 
+      this.add.rectangle(sx + 4, sy + 4, sw, sh, 0x000000, 0.8).setOrigin(0);
+      this.add.rectangle(sx, sy, sw, sh, 0x1a3d1a, 1).setOrigin(0);
+      this.add.rectangle(sx, sy, sw, 8, 0x2ecc71).setOrigin(0);
+
+      // War Table
+      this.add.ellipse(sx + sw/2, sy + sh/2, 200, 120, 0x0f2410).setStrokeStyle(3, 0x2ecc71);
+      this.add.ellipse(sx + sw/2, sy + sh/2, 160, 80, 0x000000, 0.5);
+      const holoBoard = this.add.ellipse(sx + sw/2, sy + sh/2, 140, 60, 0x2ecc71, 0.2);
+      this.tweens.add({ targets: holoBoard, alpha: 0.5, yoyo: true, repeat: -1, duration: 1500 });
+
+      this.add.text(sx + 10, sy + 10, "STRATEGY DECK", { fontSize: "12px", color: "#2ecc71", fontWeight: "bold" });
+
+      // ---------------------------------------------------------
       // 4. Add the Commander Avatar
-      const startX = bx;
-      const startY = by + 40;
+      // ---------------------------------------------------------
+      const startX = bx + (bw / 2);
+      const startY = by + (bh / 2);
       
       this.commander = this.add.sprite(startX, startY, 'commander', 4).setDepth(20).setScale(1.2);
       
@@ -223,9 +251,23 @@ new Phaser.Game({
         fontSize: "12px", color: "#f1c40f", fontWeight: "bold", stroke: "#000", strokeThickness: 3 
       }).setOrigin(0.5).setDepth(21);
 
-      this.anims.create({ key: 'left', frames: this.anims.generateFrameNumbers('commander', { start: 0, end: 3 }), frameRate: 10, repeat: -1 });
-      this.anims.create({ key: 'turn', frames: [ { key: 'commander', frame: 4 } ], frameRate: 20 });
-      this.anims.create({ key: 'right', frames: this.anims.generateFrameNumbers('commander', { start: 5, end: 8 }), frameRate: 10, repeat: -1 });
+      this.anims.create({
+        key: 'left',
+        frames: this.anims.generateFrameNumbers('commander', { start: 0, end: 3 }),
+        frameRate: 10,
+        repeat: -1
+      });
+      this.anims.create({
+        key: 'turn',
+        frames: [ { key: 'commander', frame: 4 } ],
+        frameRate: 20
+      });
+      this.anims.create({
+        key: 'right',
+        frames: this.anims.generateFrameNumbers('commander', { start: 5, end: 8 }),
+        frameRate: 10,
+        repeat: -1
+      });
 
       // 5. Commander Scanner Ability
       this.scanner = this.add.circle(startX, startY, 10, 0x4da6ff, 0.5).setDepth(15);
@@ -236,10 +278,19 @@ new Phaser.Game({
         this.scanner.setPosition(this.commander.x, this.commander.y);
         this.scanner.setRadius(10);
         this.scanner.setVisible(true);
+        
         if (this.scanTween) this.scanTween.stop();
+        
         this.scanTween = this.tweens.add({
-          targets: this.scanner, radius: 300, alpha: 0, duration: 1000, ease: 'Quad.easeOut',
-          onComplete: () => { this.scanner.setVisible(false); this.scanner.setAlpha(0.5); }
+          targets: this.scanner,
+          radius: 300,
+          alpha: 0,
+          duration: 1000,
+          ease: 'Quad.easeOut',
+          onComplete: () => {
+            this.scanner.setVisible(false);
+            this.scanner.setAlpha(0.5);
+          }
         });
       });
 
