@@ -26,7 +26,6 @@ const ROOM_POSITIONS = {
 // --- WARP SPEED STARFIELD ---
 const WarpStars = () => {
   const pointsRef = useRef();
-  // Generate 1000 stars stretched into lines
   const positions = React.useMemo(() => {
     const pos = new Float32Array(3000);
     for (let i = 0; i < 3000; i += 3) {
@@ -39,9 +38,7 @@ const WarpStars = () => {
 
   useFrame((state, delta) => {
     if (pointsRef.current) {
-      // Move stars towards the camera slowly
       pointsRef.current.position.z += delta * 2;
-      // Reset position if it goes too far
       if (pointsRef.current.position.z > 50) pointsRef.current.position.z = -50;
     }
   });
@@ -62,7 +59,6 @@ const FloatingStatBar = ({ position, label, color, width = 1.5 }) => {
   
   useFrame((state) => {
     if (fillRef.current) {
-      // Animate the bar randomly to look like active data
       const scale = 0.5 + Math.sin(state.clock.elapsedTime * 2) * 0.3 + Math.random() * 0.1;
       fillRef.current.scale.x = scale;
       fillRef.current.position.x = -(width / 2) + (width * scale) / 2;
@@ -76,12 +72,10 @@ const FloatingStatBar = ({ position, label, color, width = 1.5 }) => {
           {label}
         </div>
       </Html>
-      {/* Background Bar */}
       <mesh position={[0, 0, 0]}>
         <planeGeometry args={[width, 0.1]} />
         <meshBasicMaterial color="#111" transparent opacity={0.8} />
       </mesh>
-      {/* Animated Fill Bar */}
       <mesh ref={fillRef} position={[0, 0, 0.01]}>
         <planeGeometry args={[width, 0.1]} />
         <meshBasicMaterial color={color} />
@@ -538,11 +532,18 @@ export default function App() {
             <ambientLight intensity={0.3} />
             <directionalLight position={[10, 20, 10]} intensity={1} castShadow shadow-mapSize={[2048, 2048]} />
             
-            {/* Replaced standard grid with Warp Stars for background */}
             <WarpStars />
             <Grid position={[0, -1, 0]} args={[50, 50]} cellSize={1} cellThickness={0.5} cellColor="#00f0ff" sectionSize={5} sectionThickness={1} sectionColor="#00f0ff" fadeDistance={30} fadeStrength={1} />
 
-            <OrbitControls makeDefault maxPolarAngle={Math.PI / 2.2} minDistance={10} maxDistance={40} />
+            {/* ORBIT CONTROLS LOCKED TO ISOMETRIC ANGLE */}
+            <OrbitControls 
+              makeDefault 
+              maxPolarAngle={Math.PI / 2.5} 
+              minPolarAngle={Math.PI / 4}
+              minDistance={10} 
+              maxDistance={40} 
+              enablePan={true}
+            />
 
             {!openRoom && Object.entries(ROOM_POSITIONS).map(([id, room]) => (
               <Html key={id} position={[room.x, 3.5, room.z]} center>
