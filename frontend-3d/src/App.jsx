@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Box, Grid, Text, Html, RoundedBox } from '@react-three/drei';
+import { OrbitControls, Box, Grid, Text, Html, RoundedBox, Points, PointMaterial } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
+import * as THREE from 'three';
 import './App.css';
 
 const WS_URL = "wss://orange-system-g4w4gq7r9gxxcw7q-8000.app.github.dev/ws";
@@ -14,30 +15,54 @@ const BOT_COLORS = {
   email_bot: '#ff0000', data_bot: '#ffff00', excel_bot: '#0000ff', report_bot: '#00ff00'
 };
 
+// --- FLOATING PARTICLES ---
+const DataParticles = () => {
+  const pointsRef = useRef();
+  
+  // Generate random positions for 100 floating dots
+  const positions = React.useMemo(() => {
+    const pos = new Float32Array(300);
+    for (let i = 0; i < 300; i += 3) {
+      pos[i] = (Math.random() - 0.5) * 30;     // X
+      pos[i + 1] = Math.random() * 8;          // Y (Height)
+      pos[i + 2] = (Math.random() - 0.5) * 30; // Z
+    }
+    return pos;
+  }, []);
+
+  useFrame((state, delta) => {
+    if (pointsRef.current) {
+      pointsRef.current.rotation.y += delta * 0.02;
+    }
+  });
+
+  return (
+    <points ref={pointsRef}>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" count={100} array={positions} itemSize={3} />
+      </bufferGeometry>
+      <pointsMaterial size={0.08} color="#00f0ff" transparent opacity={0.6} sizeAttenuation />
+    </points>
+  );
+};
+
 // --- 3D MACHINERY ---
 const CommandTable = ({ position }) => {
   const ref = useRef();
   useFrame((state, delta) => (ref.current.rotation.y += delta * 0.5));
   return (
     <group position={position}>
-      {/* Desk Base */}
       <RoundedBox args={[2.5, 0.2, 1.5]} position={[0, -0.4, 0]} radius={0.1}>
         <meshStandardMaterial color="#0f172a" metalness={0.8} roughness={0.2} />
       </RoundedBox>
-      
-      {/* Hologram Base */}
       <mesh position={[0, -0.2, 0]}>
         <cylinderGeometry args={[0.6, 0.6, 0.1, 32]} />
         <meshStandardMaterial color="#1e293b" metalness={0.5} />
       </mesh>
-
-      {/* Floating Hologram */}
       <mesh ref={ref} position={[0, 0.4, 0]}>
         <boxGeometry args={[1, 1, 1]} />
         <meshStandardMaterial color="#00f0ff" emissive="#00f0ff" emissiveIntensity={2} wireframe transparent opacity={0.8} />
       </mesh>
-      
-      {/* Light */}
       <pointLight color="#00f0ff" intensity={3} distance={6} position={[0, 0.5, 0]} />
     </group>
   );
@@ -71,16 +96,19 @@ const Room = ({ position, size, color, label, children }) => {
       <Box args={[size[0], 0.1, size[2]]} position={[0, 0, 0]}>
         <meshBasicMaterial color="#00f0ff" wireframe />
       </Box>
-      <Text position={[0, 1.2, size[2]/2 - 0.5]} color="#00f0ff" fontSize={0.4} font="https://fonts.gstatic.com/s/orbitron/v25/yMJRMIlzdpvBhQQL_Qq7dys.woff">
+      
+      {/* Room Label moved down slightly */}
+      <Text position={[0, 0.6, size[2]/2 - 0.5]} color="#00f0ff" fontSize={0.3} font="https://fonts.gstatic.com/s/orbitron/v25/yMJRMIlzdpvBhQQL_Qq7dys.woff">
         {label.toUpperCase()}
       </Text>
       
-      {/* FLOATING TOOLTIP (Like in the video) */}
-      <Html position={[0, 2.5, size[2]/2]} center>
+      {/* Floating Tooltip moved higher up */}
+      <Html position={[0, 3.5, size[2]/2]} center>
         <div style={{ 
           background: 'rgba(0, 0, 0, 0.8)', border: '1px solid #555', 
           padding: '4px 8px', borderRadius: '4px', color: '#fff', 
-          fontFamily: 'Orbitron', fontSize: '10px', whiteSpace: 'nowrap'
+          fontFamily: 'Orbitron', fontSize: '10px', whiteSpace: 'nowrap',
+          boxShadow: '0 0 10px rgba(0, 240, 255, 0.2)'
         }}>
           PRESS [E] - {label.substring(0, 3).toUpperCase()}
         </div>
@@ -204,6 +232,9 @@ export default function App() {
               position={[0, -1, 0]} args={[50, 50]} cellSize={1} cellThickness={0.5} cellColor="#00f0ff" 
               sectionSize={5} sectionThickness={1} sectionColor="#00f0ff" fadeDistance={30} fadeStrength={1} 
             />
+
+            {/* Adds floating particles to the whole scene */}
+            <DataParticles />
 
             <OrbitControls makeDefault maxPolarAngle={Math.PI / 2.2} minDistance={10} maxDistance={40} />
 
