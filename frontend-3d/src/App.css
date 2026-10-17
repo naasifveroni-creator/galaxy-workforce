@@ -41,6 +41,7 @@ body {
   z-index: 10;
 }
 
+/* THE HUD PANEL */
 .hud-panel {
   position: fixed;
   top: 0;
@@ -52,17 +53,18 @@ body {
   z-index: 100;
   box-shadow: -10px 0 30px rgba(0, 0, 0, 0.8);
   transition: transform 0.3s ease;
-  overflow: hidden;
+  /* NO overflow: hidden - allows the button to be visible */
 }
 
 .hud-panel.collapsed {
   transform: translateX(100%);
 }
 
+/* THE TOGGLE BUTTON - PERMANENTLY FIXED TO SCREEN */
 .hud-toggle-btn {
-  position: absolute;
+  position: fixed;
   top: 50%;
-  left: -30px;
+  right: 300px; /* Sits exactly on the left edge of the panel */
   transform: translateY(-50%);
   width: 30px;
   height: 60px;
@@ -76,14 +78,18 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
 }
 .hud-toggle-btn:hover {
   background: #00f0ff;
   color: #000;
   box-shadow: 0 0 15px #00f0ff;
 }
+.hud-toggle-btn.collapsed {
+  right: 0px; /* Slides to the edge when panel is hidden */
+}
 
+/* CONTENT INSIDE THE HUD */
 .hud-content {
   display: flex;
   flex-direction: column;
@@ -257,7 +263,6 @@ h4 {
 .minimap-map { position: relative; width: 100%; height: calc(100% - 30px); border: 1px dashed rgba(0, 240, 255, 0.2); border-radius: 4px; background: rgba(0, 0, 0, 0.3); }
 .map-room { position: absolute; background: rgba(0, 240, 255, 0.1); border: 1px solid rgba(0, 240, 255, 0.3); }
 
-/* Updated Minimap Room Positions for 7 rooms */
 .map-bridge { width: 30%; height: 25%; top: 37%; left: 35%; }
 .map-comms { width: 20%; height: 20%; top: 15%; left: 15%; }
 .map-data { width: 20%; height: 20%; top: 15%; right: 15%; }

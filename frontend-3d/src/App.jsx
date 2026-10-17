@@ -763,7 +763,7 @@ export default function App() {
       </div>
 
       <div className={`hud-panel ${isHudExpanded ? 'expanded' : 'collapsed'}`}>
-        <button className="hud-toggle-btn" onClick={() => setIsHudExpanded(!isHudExpanded)}>
+        <button className={`hud-toggle-btn ${isHudExpanded ? '' : 'collapsed'}`} onClick={() => setIsHudExpanded(!isHudExpanded)}>
           {isHudExpanded ? '▶' : '◀'}
         </button>
 
