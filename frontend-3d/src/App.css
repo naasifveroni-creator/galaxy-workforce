@@ -33,7 +33,7 @@ body {
 
 /* HUD PANEL */
 .hud-panel {
-  width: 300px;
+  width: 320px;
   background: #060a12;
   border-left: 2px solid rgba(0, 240, 255, 0.2);
   padding: 15px;
@@ -245,26 +245,161 @@ button:hover {
 }
 .reject:hover { background: rgba(231, 76, 60, 0.3); }
 
-/* Minimap (Keep as is) */
-.minimap-container { position: absolute; bottom: 20px; left: 20px; background: rgba(2, 4, 10, 0.85); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 8px; box-shadow: 0 0 20px rgba(0, 240, 255, 0.1); backdrop-filter: blur(5px); z-index: 50; overflow: hidden; }
-.minimap-container.expanded { width: 180px; height: 200px; padding: 10px; }
-.minimap-container.minimized { width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center; }
-.minimap-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; height: 20px; }
-.minimap-title { font-family: 'Orbitron', sans-serif; font-size: 9px; color: #00f0ff; }
-.minimap-toggle { background: none; border: none; color: #00f0ff; font-size: 16px; cursor: pointer; }
-.minimap-map { position: relative; width: 100%; height: calc(100% - 30px); border: 1px dashed rgba(0, 240, 255, 0.2); border-radius: 4px; background: rgba(0, 0, 0, 0.3); }
-.map-room { position: absolute; background: rgba(0, 240, 255, 0.1); border: 1px solid rgba(0, 240, 255, 0.3); }
+/* Minimap */
+.minimap-container {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  background: rgba(2, 4, 10, 0.85);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  border-radius: 8px;
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.1), inset 0 0 20px rgba(0, 240, 255, 0.05);
+  backdrop-filter: blur(5px);
+  z-index: 50;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.minimap-container.expanded {
+  width: 180px;
+  height: 200px;
+  padding: 10px;
+}
+
+.minimap-container.minimized {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.minimap-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  height: 20px;
+}
+
+.minimap-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px;
+  color: #00f0ff;
+  letter-spacing: 1px;
+}
+
+.minimap-toggle {
+  background: none;
+  border: none;
+  color: #00f0ff;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.minimap-toggle:hover {
+  color: #fff;
+  transform: scale(1.2);
+}
+
+.minimap-container.minimized .minimap-toggle {
+  font-size: 24px;
+}
+
+.minimap-map {
+  position: relative;
+  width: 100%;
+  height: calc(100% - 30px);
+  border: 1px dashed rgba(0, 240, 255, 0.2);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.map-room {
+  position: absolute;
+  background: rgba(0, 240, 255, 0.1);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+}
+
 .map-bridge { width: 35%; height: 30%; top: 35%; left: 32.5%; }
 .map-comms { width: 22%; height: 22%; top: 10%; left: 10%; }
 .map-data { width: 22%; height: 22%; top: 10%; right: 10%; }
 .map-strategy { width: 22%; height: 22%; bottom: 10%; left: 10%; }
 .map-office { width: 22%; height: 22%; bottom: 10%; right: 10%; }
-.map-dot { position: absolute; width: 6px; height: 6px; border-radius: 50%; transform: translate(-50%, -50%); }
-.commander-dot { background-color: #f1c40f; box-shadow: 0 0 8px #f1c40f; z-index: 10; width: 8px; height: 8px; }
 
-/* Modal (Keep as is) */
-.room-modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(2, 4, 10, 0.8); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-.room-modal { background: linear-gradient(135deg, rgba(10, 15, 30, 0.95), rgba(0, 240, 255, 0.1)); border: 2px solid #00f0ff; border-radius: 8px; padding: 30px; width: 500px; max-width: 90%; color: #fff; }
-.room-modal h2 { font-family: 'Orbitron', sans-serif; color: #00f0ff; margin-top: 0; }
-.terminal-data { background: rgba(0, 0, 0, 0.5); padding: 15px; border-radius: 4px; margin: 20px 0; font-family: monospace; color: #2ecc71; border-left: 3px solid #2ecc71; }
-.close-btn { background: rgba(231, 76, 60, 0.1); color: #e74c3c; border: 1px solid #e74c3c; padding: 10px; border-radius: 4px; cursor: pointer; font-family: 'Orbitron', sans-serif; width: 100%; text-align: center; }
+.map-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: all 0.3s ease;
+}
+
+.commander-dot {
+  background-color: #f1c40f;
+  box-shadow: 0 0 8px #f1c40f;
+  z-index: 10;
+  width: 8px;
+  height: 8px;
+}
+
+/* Modal */
+.room-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(2, 4, 10, 0.8);
+  backdrop-filter: blur(5px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.room-modal {
+  background: linear-gradient(135deg, rgba(10, 15, 30, 0.95), rgba(0, 240, 255, 0.1));
+  border: 2px solid #00f0ff;
+  border-radius: 8px;
+  padding: 30px;
+  width: 500px;
+  max-width: 90%;
+  color: #fff;
+  box-shadow: 0 0 50px rgba(0, 240, 255, 0.2);
+}
+
+.room-modal h2 {
+  font-family: 'Orbitron', sans-serif;
+  color: #00f0ff;
+  margin-top: 0;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(0, 240, 255, 0.3);
+  padding-bottom: 10px;
+}
+
+.room-modal p { color: #cbd5e1; }
+
+.terminal-data {
+  background: rgba(0, 0, 0, 0.5);
+  padding: 15px;
+  border-radius: 4px;
+  margin: 20px 0;
+  font-family: monospace;
+  color: #2ecc71;
+  border-left: 3px solid #2ecc71;
+}
+
+.close-btn {
+  background: rgba(231, 76, 60, 0.1);
+  color: #e74c3c;
+  border: 1px solid #e74c3c;
+  padding: 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: 'Orbitron', sans-serif;
+  width: 100%;
+  text-align: center;
+}
+.close-btn:hover { background: rgba(231, 76, 60, 0.3); box-shadow: 0 0 10px rgba(231, 76, 60, 0.4); }
