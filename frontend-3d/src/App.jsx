@@ -1,7 +1,6 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Box, Grid, Text, Html } from '@react-three/drei';
-import { useWebSocket } from 'react-use-websocket';
 import './App.css';
 
 const WS_URL = "wss://orange-system-g4w4gq7r9gxxcw7q-8000.app.github.dev/ws";
@@ -27,11 +26,9 @@ const Room = ({ position, size, color, label }) => {
       <Box args={size} position={[0, 0, 0]}>
         <meshStandardMaterial color={color} transparent opacity={0.8} />
       </Box>
-      
       <Box args={[size[0], 0.1, size[2]]} position={[0, size[1]/2 + 0.1, 0]}>
         <meshBasicMaterial color="#00f0ff" wireframe />
       </Box>
-
       <Text position={[0, size[1]/2 + 1, 0]} color="#00f0ff" fontSize={0.8} font="https://fonts.gstatic.com/s/orbitron/v25/yMJRMIlzdpvBhQQL_Qq7dys.woff">
         {label.toUpperCase()}
       </Text>
@@ -46,12 +43,10 @@ const Bot = ({ position, color, name, status }) => {
         <capsuleGeometry args={[0.4, 0.8, 4, 16]} />
         <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.5} />
       </mesh>
-      
       <mesh position={[0, 0.3, 0.4]}>
         <boxGeometry args={[0.4, 0.2, 0.1]} />
         <meshStandardMaterial color="#87ceeb" />
       </mesh>
-
       <Html position={[0, 1.5, 0]} center>
         <div style={{ color: '#fff', fontFamily: 'Orbitron', fontSize: '12px', whiteSpace: 'nowrap', textShadow: '1px 1px 2px #000' }}>
           {name}
@@ -66,44 +61,54 @@ const Bot = ({ position, color, name, status }) => {
 export default function App() {
   const [bots, setBots] = useState({});
   const [approvals, setApprovals] = useState([]);
+  const [socket, setSocket] = useState(null);
 
-  // NEW SYNTAX FOR LATEST LIBRARY VERSION
-  const { sendJsonMessage, lastMessage } = useWebSocket(WS_URL, {
-    shouldReconnect: () => true,
-  });
-
+  // 1. NATIVE WEBSOCKET CONNECTION
   useEffect(() => {
-    if (lastMessage) {
-      try {
-        const msg = JSON.parse(lastMessage.data);
-        
-        if (msg.type === 'SNAPSHOT') {
-          const newBots = {};
-          msg.bots.forEach(b => newBots[b.bot_id] = b);
-          setBots(newBots);
-          setApprovals(msg.approvals);
-        } 
-        else if (msg.type === 'BOT_STATUS') {
-          setBots(prev => ({ ...prev, [msg.bot_id]: msg }));
-        } 
-        else if (msg.type === 'APPROVAL_REQUEST') {
-          setApprovals(prev => [...prev, msg]);
-        }
-        else if (msg.type === 'APPROVAL_RESOLVED') {
-          setApprovals(prev => prev.filter(a => a.task_id !== msg.task_id));
-        }
-      } catch (e) {
-        console.error("Error parsing message", e);
+    const ws = new WebSocket(WS_URL);
+
+    ws.onopen = () => console.log("Connected to backend");
+
+    ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+
+      if (msg.type === 'SNAPSHOT') {
+        const newBots = {};
+        msg.bots.forEach(b => newBots[b.bot_id] = b);
+        setBots(newBots);
+        setApprovals(msg.approvals);
+      } 
+      else if (msg.type === 'BOT_STATUS') {
+        setBots(prev => ({ ...prev, [msg.bot_id]: msg }));
+      } 
+      else if (msg.type === 'APPROVAL_REQUEST') {
+        setApprovals(prev => [...prev, msg]);
       }
+      else if (msg.type === 'APPROVAL_RESOLVED') {
+        setApprovals(prev => prev.filter(a => a.task_id !== msg.task_id));
+      }
+    };
+
+    setSocket(ws);
+
+    return () => ws.close();
+  }, []);
+
+  // 2. SEND FUNCTION
+  const sendMessage = (obj) => {
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify(obj));
+    } else {
+      console.error("WebSocket is not connected!");
     }
-  }, [lastMessage]);
+  };
 
   const dispatchBot = (botId) => {
-    sendJsonMessage({ type: "START_TASK", bot_id: botId });
+    sendMessage({ type: "START_TASK", bot_id: botId });
   };
 
   const resolveApproval = (taskId, isApproved) => {
-    sendJsonMessage({ 
+    sendMessage({ 
       type: isApproved ? 'APPROVE_ACTION' : 'REJECT_ACTION', 
       task_id: taskId 
     });
@@ -111,7 +116,6 @@ export default function App() {
 
   return (
     <div className="app-container">
-      
       <div className="canvas-container">
         <Suspense fallback={<div style={{color: 'white', position: 'absolute', top: '50%', left: '50%'}}>Loading Ship...</div>}>
           <Canvas camera={{ position: [0, 15, 20], fov: 45 }}>
