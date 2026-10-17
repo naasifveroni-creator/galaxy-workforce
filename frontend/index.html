@@ -42,7 +42,7 @@
         
         .action-btn { padding: 8px; border-radius: 3px; cursor: pointer; font-weight: bold; border: none; color: white; width: 100%; }
         .approve { background: #2ecc71; }
-        .approve:hover { background: #27ae60; box-shadow: 0 0 10px rgba(46, 204, 113, 0.4); }
+        .approve:hover { background: #27ae60; }
         .reject { background: #e74c3c; }
         .reject:hover { background: #c0392b; }
 
@@ -52,9 +52,10 @@
             box-shadow: 0 0 15px rgba(241, 196, 15, 0.15);
         }
 
-        /* --- THE BOT UPGRADE --- */
+        /* --- THE FIXED BOT UPGRADE --- */
         .bot-container {
             position: absolute; width: 40px; height: 40px; 
+            /* THIS moves the container */
             transition: left 2s ease-in-out, top 2s ease-in-out;
             z-index: 5; display: flex; justify-content: center; align-items: center;
         }
@@ -67,6 +68,7 @@
             border: 2px solid rgba(255, 255, 255, 0.8);
         }
 
+        /* Animations apply ONLY to the inner body, not the container */
         .bot-container.walking .bot-body { animation: bob 0.3s infinite alternate; }
         .bot-container.working .bot-body { animation: pulse 1s infinite alternate; }
 
@@ -80,8 +82,15 @@
             to { box-shadow: 0 0 30px var(--bot-color), inset -5px -5px 15px rgba(0,0,0,0.5); transform: scale(1.1); }
         }
 
-        .bot-label { position: absolute; top: -25px; white-space: nowrap; color: #fff; font-size: 10px; font-weight: bold; text-shadow: 1px 1px 3px black, 0 0 5px black; }
-        .bot-status { position: absolute; bottom: -20px; white-space: nowrap; color: #a9b7d0; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; }
+        .bot-label { 
+            position: absolute; top: -25px; white-space: nowrap; color: #fff; 
+            font-size: 10px; font-weight: bold; text-shadow: 1px 1px 3px black, 0 0 5px black;
+        }
+        
+        .bot-status {
+            position: absolute; bottom: -20px; white-space: nowrap; color: #a9b7d0;
+            font-size: 9px; text-transform: uppercase; letter-spacing: 1px;
+        }
     </style>
 </head>
 <body>
@@ -119,7 +128,7 @@
         const WS_URL = "wss://orange-system-g4w4gq7r9gxxcw7q-8000.app.github.dev/ws";
         let ws;
         let bots = {}; 
-        let activeTasks = {}; // <-- NEW: Stores task_ids linked to bot_ids
+        let activeTasks = {}; 
 
         const ROOMS = {
             bridge: { x: 400, y: 475 },
@@ -160,14 +169,17 @@
                 botEl = document.createElement('div');
                 botEl.className = 'bot-container';
                 botEl.style.setProperty('--bot-color', data.color);
+                
                 botEl.innerHTML = `
                     <div class="bot-label">${data.name}</div>
                     <div class="bot-body"></div>
                     <div class="bot-status">${data.status}</div>
                 `;
+                
                 const offset = data.bot_id === 'email_bot' ? -60 : data.bot_id === 'data_bot' ? -20 : data.bot_id === 'excel_bot' ? 20 : 60;
                 botEl.style.left = (ROOMS.bridge.x + offset) + 'px';
                 botEl.style.top = ROOMS.bridge.y + 'px';
+                
                 document.getElementById('map').appendChild(botEl);
                 bots[data.bot_id] = botEl;
             }
@@ -194,8 +206,7 @@
             card.className = 'approval-card';
             card.id = `card-${data.bot_id}`;
             
-            // THE CRITICAL FIX: Save the task_id from the backend
-            activeTasks[data.bot_id] = data.task_id;
+            activeTasks[data.bot_id] = data.task_id; // Save task_id
             
             let preview = data.preview ? JSON.stringify(data.preview, null, 2) : "No preview data.";
             
@@ -219,16 +230,13 @@
 
         function sendApproval(botId, isApproved) {
             if (ws && ws.readyState === WebSocket.OPEN) {
-                // THE CRITICAL FIX: Send the task_id back to the Python server
                 const taskId = activeTasks[botId];
-                
                 ws.send(JSON.stringify({ 
                     type: isApproved ? 'APPROVE_ACTION' : 'REJECT_ACTION',
                     bot_id: botId,
-                    task_id: taskId, // <-- Sends the required task_id
+                    task_id: taskId,
                     approved: isApproved 
                 }));
-                
                 const card = document.getElementById(`card-${botId}`);
                 if (card) card.remove();
             }
