@@ -93,6 +93,13 @@ const DataForgeCore = ({ position }) => {
         <torusGeometry args={[1.0, 0.02, 16, 64]} />
         <meshStandardMaterial color="#87ceeb" emissive="#87ceeb" emissiveIntensity={1.5} />
       </mesh>
+      
+      {/* Added Server Pylon base */}
+      <mesh position={[0, -0.8, 0]}>
+        <cylinderGeometry args={[1.6, 1.8, 0.2, 8]} />
+        <meshStandardMaterial color="#051420" metalness={0.9} />
+      </mesh>
+
       <pointLight color="#00f0ff" intensity={2} distance={6} />
     </group>
   );
@@ -202,7 +209,6 @@ const Room = ({ position, size, color, label, children }) => {
         <meshBasicMaterial color="#00f0ff" transparent opacity={0.2} />
       </mesh>
       
-      {/* Floor text marker */}
       <Text position={[-width/2 + 0.2, 0.1, -depth/2 + 0.3]} rotation={[-Math.PI / 2, 0, 0]} color="#00f0ff" fontSize={0.3} font="https://fonts.gstatic.com/s/orbitron/v25/yMJRMIlzdpvBhQQL_Qq7dys.woff">
         {label.toUpperCase()}
       </Text>
@@ -245,8 +251,7 @@ const Crewmate3D = ({ color, name, status, isCommander }) => {
         <div style={{ color: isCommander ? '#f1c40f' : '#fff', fontFamily: 'Orbitron', fontSize: '10px', whiteSpace: 'nowrap', textShadow: '1px 1px 3px #000', textAlign: 'center', fontWeight: 'bold' }}>
           {name}
           {status && <><br /><span style={{ color: '#00f0ff', fontSize: '9px' }}>{status}</span></>}
-        </div>
-      </Html>
+        </Html>
     </group>
   );
 };
@@ -389,15 +394,18 @@ export default function App() {
 
             {Object.values(bots).map((bot) => {
               let x = 0, z = 0;
+              // Push bots away from the text in the bottom-left corner
               if (bot.location === 'comms_array') { x = -8; z = -8; }
               if (bot.location === 'data_forge') { x = 8; z = -8; }
               if (bot.location === 'strategy_deck') { x = -8; z = 8; }
               if (bot.location === 'office') { x = 8; z = 8; }
+              if (bot.location === 'bridge') { x = 0; z = 0; }
               
-              if (bot.bot_id === 'email_bot') x -= 2;
-              if (bot.bot_id === 'data_bot') z -= 2;
-              if (bot.bot_id === 'excel_bot') x += 2;
-              if (bot.bot_id === 'report_bot') z += 2;
+              // Spread them in the back-right of the Bridge
+              if (bot.bot_id === 'email_bot') { x -= 1.5; z -= 1.5; }
+              if (bot.bot_id === 'data_bot') { x -= 0.5; z -= 1.5; }
+              if (bot.bot_id === 'excel_bot') { x += 0.5; z -= 1.5; }
+              if (bot.bot_id === 'report_bot') { x += 1.5; z -= 1.5; }
 
               return (
                 <group key={bot.bot_id} position={[x, 0.6, z]}>
