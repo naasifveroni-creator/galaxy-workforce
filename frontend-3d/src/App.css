@@ -12,11 +12,13 @@ body {
   display: flex;
   width: 100vw;
   height: 100vh;
+  overflow: hidden;
 }
 
 .canvas-container {
   flex: 1;
   position: relative;
+  min-width: 0; /* Crucial: stops the canvas from pushing the HUD off screen */
 }
 
 /* CRT Scanline Effect */
@@ -31,21 +33,60 @@ body {
   z-index: 10;
 }
 
-/* HUD PANEL - FIXED WIDTH */
+/* HUD PANEL */
 .hud-panel {
-  width: 320px;
-  min-width: 320px;
-  max-width: 320px;
-  flex-shrink: 0;
   background: #060a12;
   border-left: 2px solid rgba(0, 240, 255, 0.2);
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+  transition: width 0.3s ease;
+  position: relative;
+}
+
+.hud-panel.expanded {
+  width: 320px;
+  min-width: 320px;
   padding: 15px;
+}
+
+.hud-panel.collapsed {
+  width: 0px;
+  min-width: 0px;
+  padding: 0px;
+  overflow: hidden;
+}
+
+/* The Toggle Button */
+.hud-toggle {
+  position: absolute;
+  top: 50%;
+  left: -30px;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 60px;
+  background: #060a12;
+  border: 2px solid rgba(0, 240, 255, 0.2);
+  border-right: none;
+  color: #00f0ff;
+  font-size: 12px;
+  cursor: pointer;
+  z-index: 101;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+}
+.hud-toggle:hover { background: #00f0ff; color: #000; }
+
+/* Content inside the HUD */
+.hud-content {
   display: flex;
   flex-direction: column;
   gap: 15px;
-  z-index: 100;
-  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
-  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -57,6 +98,8 @@ body {
   align-items: center;
   border-bottom: 1px solid rgba(0, 240, 255, 0.2);
   padding-bottom: 10px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .logo-text {
@@ -84,6 +127,8 @@ body {
   border: 1px solid rgba(0, 240, 255, 0.3);
   border-radius: 4px;
   padding: 10px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .xp-bar-container {
@@ -92,6 +137,7 @@ body {
   border-radius: 2px;
   margin-top: 8px;
   overflow: hidden;
+  width: 100%;
 }
 
 .xp-bar {
@@ -116,6 +162,7 @@ h4 {
   grid-template-columns: 1fr 1fr;
   gap: 6px;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .telemetry-box {
@@ -126,6 +173,7 @@ h4 {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  width: 100%;
 }
 
 .telem-label {
@@ -204,9 +252,10 @@ h4 {
   flex-direction: column;
   gap: 6px;
   width: 100%;
+  box-sizing: border-box;
 }
 
-button {
+.button-group button {
   background: rgba(0, 240, 255, 0.05);
   color: #00f0ff;
   border: 1px solid rgba(0, 240, 255, 0.3);
@@ -218,9 +267,12 @@ button {
   transition: all 0.2s;
   text-align: left;
   box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
 }
 
-button:hover {
+.button-group button:hover {
   background: rgba(0, 240, 255, 0.15);
   border-color: #00f0ff;
   box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
@@ -235,6 +287,7 @@ button:hover {
   margin-bottom: 8px;
   font-size: 12px;
   box-sizing: border-box;
+  width: 100%;
 }
 
 .row {
@@ -243,26 +296,16 @@ button:hover {
   margin-top: 10px;
 }
 
-.approve {
-  background: rgba(46, 204, 113, 0.1);
-  border: 1px solid #2ecc71;
-  color: #2ecc71;
+.approve, .reject {
   flex: 1;
   text-align: center;
   padding: 6px;
   font-size: 11px;
+  box-sizing: border-box;
 }
+.approve { background: rgba(46, 204, 113, 0.1); border: 1px solid #2ecc71; color: #2ecc71; }
 .approve:hover { background: rgba(46, 204, 113, 0.3); }
-
-.reject {
-  background: rgba(231, 76, 60, 0.1);
-  border: 1px solid #e74c3c;
-  color: #e74c3c;
-  flex: 1;
-  text-align: center;
-  padding: 6px;
-  font-size: 11px;
-}
+.reject { background: rgba(231, 76, 60, 0.1); border: 1px solid #e74c3c; color: #e74c3c; }
 .reject:hover { background: rgba(231, 76, 60, 0.3); }
 
 /* Minimap */
@@ -421,5 +464,6 @@ button:hover {
   font-family: 'Orbitron', sans-serif;
   width: 100%;
   text-align: center;
+  box-sizing: border-box;
 }
 .close-btn:hover { background: rgba(231, 76, 60, 0.3); box-shadow: 0 0 10px rgba(231, 76, 60, 0.4); }
