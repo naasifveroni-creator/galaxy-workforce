@@ -131,9 +131,6 @@ new Phaser.Game({
   scene: {
     preload() {
       this.load.spritesheet('commander', 'https://labs.phaser.io/assets/sprites/dude.png', { frameWidth: 32, frameHeight: 48 });
-      // Load Metal Textures for the Floor and Walls
-      this.load.image('floor', 'https://labs.phaser.io/assets/textures/checker.png');
-      this.load.image('wall', 'https://labs.phaser.io/assets/textures/3d.png');
     },
     create() {
       scene = this;
@@ -145,10 +142,10 @@ new Phaser.Game({
         stars.fillCircle(Math.random() * 960, Math.random() * 640, Math.random() * 1.5);
       }
 
-      // 2. Ship Corridor Floor (Metal Grating)
-      const mapWidth = 12 * TILE;
-      const mapHeight = 8 * TILE;
-      this.add.tileSprite(0, 0, mapWidth, mapHeight, 'floor').setOrigin(0).setAlpha(0.1);
+      // 2. Ship Corridor Grid (Very subtle so it doesn't look like graph paper)
+      const g = this.add.graphics().lineStyle(1, 0x1a2b4c, 0.2);
+      for (let x = 0; x <= 12; x++) g.lineBetween(x * TILE, 0, x * TILE, 8 * TILE);
+      for (let y = 0; y <= 8; y++)  g.lineBetween(0, y * TILE, 12 * TILE, y * TILE);
 
       // 3. Build the Rooms
       Object.values(ROOMS).forEach(r => {
@@ -158,32 +155,37 @@ new Phaser.Game({
         const h = r.h * TILE;
 
         // Base Color Fill
-        this.add.rectangle(x, y, w, h, r.color, 0.7).setOrigin(0);
+        this.add.rectangle(x, y, w, h, r.color, 0.85).setOrigin(0);
         
-        // Textured Floor Overlay inside the room
-        this.add.tileSprite(x + 8, y + 8, w - 16, h - 16, 'wall').setOrigin(0).setAlpha(0.15);
+        // Floor Detail Lines (gives it a "deck plate" look instead of a grid)
+        for(let i=0; i<w; i+=40) {
+            this.add.line(x+i, y, 0, 0, 0, h, 0x000000, 0.1);
+        }
+        for(let i=0; i<h; i+=40) {
+            this.add.line(x, y+i, 0, 0, w, 0, 0x000000, 0.1);
+        }
 
         // Thick Metal Walls (3D Effect)
-        this.add.rectangle(x, y, w, 10, 0x555555).setOrigin(0); // Top
-        this.add.rectangle(x, y + h - 10, w, 10, 0x222222).setOrigin(0); // Bottom (Shadow)
-        this.add.rectangle(x, y, 10, h, 0x444444).setOrigin(0); // Left
-        this.add.rectangle(x + w - 10, y, 10, h, 0x333333).setOrigin(0); // Right (Shadow)
+        this.add.rectangle(x, y, w, 6, 0x555555).setOrigin(0); // Top
+        this.add.rectangle(x, y + h - 6, w, 6, 0x222222).setOrigin(0); // Bottom
+        this.add.rectangle(x, y, 6, h, 0x444444).setOrigin(0); // Left
+        this.add.rectangle(x + w - 6, y, 6, h, 0x333333).setOrigin(0); // Right
 
         // Sci-Fi Room Signage
         this.add.text(x + 15, y + 15, r.label, { 
           fontSize: "12px", color: "#fff", fontWeight: "bold", 
           stroke: "#000", strokeThickness: 3, backgroundColor: "rgba(0,0,0,0.6)", padding: { x: 6, y: 4 } 
-        });
+        }).setDepth(5);
       });
 
-      // --- MACHINERY ---
+      // --- MACHINERY (Set to Depth 2 so they sit on the floor, behind the bots) ---
       
       // Bridge Hologram
       const bridge = ROOMS['bridge'];
       const bx = bridge.col * TILE + (bridge.w * TILE / 2);
       const by = bridge.row * TILE + (bridge.h * TILE / 2);
-      const holo = this.add.circle(bx - 30, by, 20, 0x4da6ff, 0.4);
-      this.tweens.add({ targets: holo, alpha: 0.8, scale: 1.2, yoyo: true, repeat: -1, duration: 1500 });
+      const holo = this.add.circle(bx, by - 20, 20, 0x4da6ff, 0.2).setDepth(2);
+      this.tweens.add({ targets: holo, alpha: 0.5, scale: 1.2, yoyo: true, repeat: -1, duration: 1500 });
 
       // Comms Array Server Lights
       const comms = ROOMS['comms_array'];
@@ -191,7 +193,7 @@ new Phaser.Game({
       const cy = comms.row * TILE + 50;
       for(let i=0; i<3; i++) {
         for(let j=0; j<3; j++) {
-          const light = this.add.circle(cx + (i*40), cy + (j*25), 4, 0xff4d4d);
+          const light = this.add.circle(cx + (i*40), cy + (j*25), 4, 0xff4d4d).setDepth(2);
           this.tweens.add({ targets: light, alpha: 0, yoyo: true, repeat: -1, duration: 500 + Math.random() * 500 });
         }
       }
@@ -200,17 +202,16 @@ new Phaser.Game({
       const data = ROOMS['data_forge'];
       const dx = data.col * TILE + (data.w * TILE / 2);
       const dy = data.row * TILE + (data.h * TILE / 2);
-      const ring1 = this.add.circle(dx, dy, 40, 0x000000, 0).setStrokeStyle(1, 0x4da6ff, 0.8);
+      const ring1 = this.add.circle(dx, dy, 40, 0x000000, 0).setStrokeStyle(1, 0x4da6ff, 0.4).setDepth(2);
       this.tweens.add({ targets: ring1, angle: 360, repeat: -1, duration: 4000 });
-      const ring2 = this.add.circle(dx, dy, 60, 0x000000, 0).setStrokeStyle(1, 0x4da6ff, 0.4);
+      const ring2 = this.add.circle(dx, dy, 60, 0x000000, 0).setStrokeStyle(1, 0x4da6ff, 0.2).setDepth(2);
       this.tweens.add({ targets: ring2, angle: -360, repeat: -1, duration: 6000 });
 
       // Strategy Deck War Table
       const strat = ROOMS['strategy_deck'];
       const sx = strat.col * TILE + (strat.w * TILE / 2);
       const sy = strat.row * TILE + (strat.h * TILE / 2);
-      this.add.ellipse(sx, sy, 160, 80, 0x0f2410).setStrokeStyle(2, 0x2ecc71);
-      this.add.ellipse(sx, sy, 140, 60, 0x000000, 0.5);
+      this.add.ellipse(sx, sy, 160, 80, 0x0f2410).setStrokeStyle(2, 0x2ecc71).setDepth(2);
 
       // 4. Add the Commander Avatar
       const startX = bx;
