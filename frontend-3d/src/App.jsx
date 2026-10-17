@@ -23,7 +23,7 @@ const ROOM_POSITIONS = {
   office: { x: 8, z: 8, label: "Commander's Office" }
 };
 
-// --- MACHINERY ---
+// --- MACHINERY (Keep as is) ---
 const CommandTable = ({ position }) => {
   const ref = useRef();
   useFrame((state, delta) => (ref.current.rotation.y += delta * 0.5));
@@ -189,36 +189,48 @@ const Room = ({ position, size, color, label, children }) => {
   );
 };
 
-// --- REAL 3D AMONG US CHARACTER ---
-const Crewmate3D = ({ color, name, status, isCommander }) => {
+// --- REAL 3D AMONG US CHARACTER (Now with movable legs) ---
+const Crewmate3D = ({ color, name, status, isCommander, refs }) => {
   return (
     <group>
-      <mesh castShadow>
+      {/* Body */}
+      <mesh ref={refs?.body} castShadow>
         <capsuleGeometry args={[0.35, 0.5, 8, 16]} />
         <meshStandardMaterial color={color} roughness={0.4} metalness={0.2} />
       </mesh>
+      
+      {/* Backpack */}
       <RoundedBox args={[0.3, 0.4, 0.2]} position={[-0.35, 0, 0]} radius={0.05}>
         <meshStandardMaterial color={color} roughness={0.4} metalness={0.2} />
       </RoundedBox>
+      
+      {/* Visor */}
       <RoundedBox args={[0.45, 0.25, 0.2]} position={[0.15, 0.25, 0.25]} radius={0.1}>
         <meshStandardMaterial color="#888" roughness={0.2} metalness={0.9} />
       </RoundedBox>
       <RoundedBox args={[0.4, 0.2, 0.15]} position={[0.15, 0.25, 0.35]} radius={0.08}>
         <meshStandardMaterial color="#87ceeb" emissive="#87ceeb" emissiveIntensity={0.8} transparent opacity={0.9} roughness={0.1} metalness={0.8} />
       </RoundedBox>
-      <mesh position={[-0.15, -0.5, 0]}>
-        <cylinderGeometry args={[0.1, 0.1, 0.2]} />
+      
+      {/* Left Leg */}
+      <mesh ref={refs?.leftLeg} position={[-0.15, -0.5, 0]}>
+        <cylinderGeometry args={[0.1, 0.1, 0.3]} />
         <meshStandardMaterial color={color} />
       </mesh>
-      <mesh position={[0.15, -0.5, 0]}>
-        <cylinderGeometry args={[0.1, 0.1, 0.2]} />
+      
+      {/* Right Leg */}
+      <mesh ref={refs?.rightLeg} position={[0.15, -0.5, 0]}>
+        <cylinderGeometry args={[0.1, 0.1, 0.3]} />
         <meshStandardMaterial color={color} />
       </mesh>
+      
+      {/* Glow Ring */}
       <mesh position={[0, -0.65, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[0.4, 0.5, 32]} />
         <meshBasicMaterial color={isCommander ? "#f1c40f" : color} transparent opacity={0.8} />
       </mesh>
       
+      {/* Text Label */}
       <Html position={[0, 1.2, 0]} center>
         <div style={{ color: isCommander ? '#f1c40f' : '#fff', fontFamily: 'Orbitron', fontSize: '10px', whiteSpace: 'nowrap', textShadow: '1px 1px 3px #000', textAlign: 'center', fontWeight: 'bold' }}>
           {name}
@@ -229,10 +241,12 @@ const Crewmate3D = ({ color, name, status, isCommander }) => {
   );
 };
 
-// --- WALKING BOT COMPONENT (Now with smooth easing & bobbing) ---
+// --- WALKING BOT COMPONENT (Now with actual leg animations) ---
 const MovingBot = ({ bot }) => {
   const groupRef = useRef();
-  const innerRef = useRef();
+  const leftLegRef = useRef();
+  const rightLegRef = useRef();
+  const bodyRef = useRef();
   
   const getTargetPos = (loc, id) => {
     let x = 0, z = 0;
@@ -249,51 +263,71 @@ const MovingBot = ({ bot }) => {
   };
 
   const targetPos = useRef(getTargetPos(bot.location, bot.bot_id));
-  const currentSpeed = useRef(0);
   const walkTime = useRef(0);
+  const isWalking = useRef(false);
 
   useEffect(() => {
     const newTarget = getTargetPos(bot.location, bot.bot_id);
     if (!newTarget.equals(targetPos.current)) {
       targetPos.current = newTarget;
+      isWalking.current = true;
     }
   }, [bot.location, bot.bot_id]);
 
   useFrame((state, delta) => {
     if (!groupRef.current) return;
 
-    // 1. Smooth Movement (Lerp)
     const distance = groupRef.current.position.distanceTo(targetPos.current);
     
     if (distance > 0.05) {
-      // Move the bot closer to the target
-      groupRef.current.position.lerp(targetPos.current, 4 * delta);
+      // 1. Move towards target
+      groupRef.current.position.lerp(targetPos.current, 3 * delta);
       
-      // 2. Rotate the bot to face the walking direction
+      // 2. Rotate to face direction
       const angle = Math.atan2(
         targetPos.current.x - groupRef.current.position.x,
         targetPos.current.z - groupRef.current.position.z
       );
-      // Smoothly rotate
-      groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, angle, 10 * delta);
+      groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, angle, 8 * delta);
 
-      // 3. Bobbing animation (up and down)
-      walkTime.current += delta * 10;
-      innerRef.current.position.y = Math.abs(Math.sin(walkTime.current)) * 0.15;
+      // 3. Trigger walk animation
+      walkTime.current += delta * 12; // Speed of leg swings
+      
+      const swing = Math.sin(walkTime.current) * 0.4; // Leg rotation amount
+      
+      if (leftLegRef.current && rightLegRef.current && bodyRef.current) {
+        // Legs swing forward and backward
+        leftLegRef.current.rotation.x = swing;
+        rightLegRef.current.rotation.x = -swing;
+        
+        // Body bobs up and down slightly (2x the speed of legs)
+        bodyRef.current.position.y = Math.abs(Math.sin(walkTime.current)) * 0.05;
+      }
       
     } else {
-      // Snap to target and reset bob when stopped
+      // Stop and reset to idle
       groupRef.current.position.copy(targetPos.current);
-      innerRef.current.position.y = 0;
+      if (isWalking.current) {
+        isWalking.current = false;
+        
+        // Reset legs and body
+        if (leftLegRef.current && rightLegRef.current && bodyRef.current) {
+          leftLegRef.current.rotation.x = 0;
+          rightLegRef.current.rotation.x = 0;
+          bodyRef.current.position.y = 0;
+        }
+      }
     }
   });
 
   return (
     <group ref={groupRef} position={getTargetPos(bot.location, bot.bot_id)}>
-      {/* innerRef is used for the bobbing so it doesn't mess up the actual floor position */}
-      <group ref={innerRef}>
-        <Crewmate3D color={BOT_COLORS[bot.bot_id]} name={bot.name} status={bot.status} />
-      </group>
+      <Crewmate3D 
+        color={BOT_COLORS[bot.bot_id]} 
+        name={bot.name} 
+        status={bot.status} 
+        refs={{ leftLeg: leftLegRef, rightLeg: rightLegRef, body: bodyRef }} 
+      />
     </group>
   );
 };
