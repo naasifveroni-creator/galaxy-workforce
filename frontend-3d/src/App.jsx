@@ -520,7 +520,7 @@ export default function App() {
   const [socket, setSocket] = useState(null);
   const [activeRoom, setActiveRoom] = useState(null);
   const [openRoom, setOpenRoom] = useState(null);
-  const [isHudExpanded, setIsHudExpanded] = useState(true); // NEW: Toggle state
+  const [isHudExpanded, setIsHudExpanded] = useState(true);
   const commanderPos = useRef({ x: 8, z: 8 });
 
   useEffect(() => {
@@ -630,12 +630,6 @@ export default function App() {
 
       {/* --- HUD PANEL WITH TOGGLE --- */}
       <div className={`hud-panel ${isHudExpanded ? 'expanded' : 'collapsed'}`}>
-        
-        {/* The Toggle Button */}
-        <button className="hud-toggle" onClick={() => setIsHudExpanded(!isHudExpanded)}>
-          {isHudExpanded ? '▶' : '◀'}
-        </button>
-        
         <div className="hud-content">
           {/* SYSTEM HEADER */}
           <div className="system-header">
@@ -733,6 +727,17 @@ export default function App() {
           </div>
         </div>
       </div>
+
+      {/* THE TOGGLE BUTTON IS NOW OUTSIDE THE PANEL AND FIXED TO THE SCREEN */}
+      <button 
+        className="hud-toggle" 
+        onClick={() => setIsHudExpanded(!isHudExpanded)}
+        style={{
+          right: isHudExpanded ? '320px' : '0px',
+        }}
+      >
+        {isHudExpanded ? '▶' : '◀'}
+      </button>
 
       {openRoom && (
         <div className="room-modal-overlay" onClick={() => setOpenRoom(null)}>
