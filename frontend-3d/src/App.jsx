@@ -704,24 +704,6 @@ export default function App() {
               </button>
             </div>
           </div>
-
-          <div style={{ flex: 1, overflowY: 'auto' }}>
-            <h4>Pending Approvals</h4>
-            {approvals.length === 0 ? (
-              <div style={{ fontSize: '11px', color: '#4a5568', textAlign: 'center', marginTop: '10px' }}>No actions awaiting approval.</div>
-            ) : (
-              approvals.map((a) => (
-                <div key={a.task_id} className="approval-card">
-                  <div style={{ color: '#f1c40f', fontWeight: 'bold', marginBottom: '4px' }}>{a.bot_id.toUpperCase()}</div>
-                  {a.summary}
-                  <div className="row">
-                    <button className="approve" onClick={() => sendMessage({ type: 'APPROVE_ACTION', task_id: a.task_id })}>APPROVE</button>
-                    <button className="reject" onClick={() => sendMessage({ type: 'REJECT_ACTION', task_id: a.task_id })}>REJECT</button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
         </div>
       </div>
 
@@ -738,6 +720,32 @@ export default function App() {
               {openRoom === 'office' && <p>Commander's personal logs.</p>}
             </div>
             <button className="close-btn" onClick={() => setOpenRoom(null)}>CLOSE TERMINAL [ESC]</button>
+          </div>
+        </div>
+      )}
+
+      {approvals.length > 0 && !openRoom && (
+        <div className="room-modal-overlay" style={{ background: 'rgba(0,0,0,0.4)' }}>
+          <div className="room-modal" style={{ borderColor: '#f1c40f', width: '600px' }} onClick={e => e.stopPropagation()}>
+            <h2 style={{ color: '#f1c40f' }}>APPROVAL REQUIRED</h2>
+            <p style={{ color: '#fff' }}>One or more agents are waiting for your command.</p>
+            {approvals.map((a) => (
+              <div key={a.task_id} className="approval-card" style={{ marginBottom: '15px' }}>
+                <div style={{ color: '#f1c40f', fontWeight: 'bold', marginBottom: '8px', fontSize: '14px' }}>{a.bot_id.toUpperCase()}</div>
+                <div style={{ fontSize: '13px', color: '#cbd5e1', marginBottom: '10px' }}>{a.summary}</div>
+                <div className="row">
+                  <button className="approve" style={{ padding: '10px', fontSize: '13px' }} onClick={() => {
+                    sendMessage({ type: 'APPROVE_ACTION', task_id: a.task_id });
+                    setApprovals(prev => prev.filter(x => x.task_id !== a.task_id));
+                  }}>APPROVE</button>
+                  <button className="reject" style={{ padding: '10px', fontSize: '13px' }} onClick={() => {
+                    sendMessage({ type: 'REJECT_ACTION', task_id: a.task_id });
+                    setApprovals(prev => prev.filter(x => x.task_id !== a.task_id));
+                  }}>REJECT</button>
+                </div>
+              </div>
+            ))}
+            <button className="close-btn" onClick={() => setApprovals([])}>DISMISS (WILL RE-TRIGGER)</button>
           </div>
         </div>
       )}

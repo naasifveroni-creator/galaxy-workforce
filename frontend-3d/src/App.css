@@ -41,6 +41,7 @@ body {
   z-index: 10;
 }
 
+/* THE HUD PANEL - NO OVERFLOW HIDDEN SO THE BUTTON SHOWS */
 .hud-panel {
   position: fixed;
   top: 0;
@@ -52,13 +53,13 @@ body {
   z-index: 100;
   box-shadow: -10px 0 30px rgba(0, 0, 0, 0.8);
   transition: transform 0.3s ease;
-  overflow: hidden;
 }
 
 .hud-panel.collapsed {
   transform: translateX(100%);
 }
 
+/* THE TOGGLE BUTTON - OUTSIDE THE PANEL */
 .hud-toggle-btn {
   position: absolute;
   top: 50%;
@@ -84,6 +85,7 @@ body {
   box-shadow: 0 0 15px #00f0ff;
 }
 
+/* CONTENT INSIDE (Scrolling) */
 .hud-content {
   display: flex;
   flex-direction: column;
@@ -248,32 +250,6 @@ h4 {
   overflow: hidden;
 }
 
-.approval-card {
-  background: rgba(15, 20, 30, 0.9);
-  border-left: 3px solid #f1c40f;
-  padding: 10px;
-  border-radius: 4px;
-  margin-bottom: 8px;
-  font-size: 11px;
-  width: 100%;
-}
-
-.row {
-  display: flex;
-  gap: 6px;
-  margin-top: 10px;
-  width: 100%;
-}
-
-.approve, .reject {
-  flex: 1;
-  text-align: center;
-  padding: 6px;
-  font-size: 10px;
-}
-.approve { background: rgba(46, 204, 113, 0.1); border: 1px solid #2ecc71; color: #2ecc71; }
-.reject { background: rgba(231, 76, 60, 0.1); border: 1px solid #e74c3c; color: #e74c3c; }
-
 .minimap-container { position: absolute; bottom: 20px; left: 20px; background: rgba(2, 4, 10, 0.85); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 8px; z-index: 50; }
 .minimap-container.expanded { width: 180px; height: 200px; padding: 10px; }
 .minimap-container.minimized { width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center; }
@@ -290,8 +266,14 @@ h4 {
 .map-dot { position: absolute; width: 6px; height: 6px; border-radius: 50%; transform: translate(-50%, -50%); }
 .commander-dot { background-color: #f1c40f; box-shadow: 0 0 8px #f1c40f; z-index: 10; width: 8px; height: 8px; }
 
-.room-modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(2, 4, 10, 0.8); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-.room-modal { background: #0a0f1e; border: 2px solid #00f0ff; border-radius: 8px; padding: 30px; width: 500px; color: #fff; }
+/* MODAL & APPROVALS OVERLAY */
+.room-modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(2, 4, 10, 0.85); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+.room-modal { background: #0a0f1e; border: 2px solid #00f0ff; border-radius: 8px; padding: 30px; width: 500px; color: #fff; max-height: 80vh; overflow-y: auto; }
 .room-modal h2 { font-family: 'Orbitron', sans-serif; color: #00f0ff; margin-top: 0; }
 .terminal-data { background: rgba(0, 0, 0, 0.5); padding: 15px; border-radius: 4px; margin: 20px 0; font-family: monospace; color: #2ecc71; border-left: 3px solid #2ecc71; }
 .close-btn { background: rgba(231, 76, 60, 0.1); color: #e74c3c; border: 1px solid #e74c3c; padding: 10px; border-radius: 4px; cursor: pointer; font-family: 'Orbitron', sans-serif; width: 100%; text-align: center; }
+.approval-card { background: rgba(15, 20, 30, 0.9); border-left: 3px solid #f1c40f; padding: 10px; border-radius: 4px; margin-bottom: 8px; font-size: 12px; width: 100%; }
+.row { display: flex; gap: 6px; margin-top: 10px; width: 100%; }
+.approve, .reject { flex: 1; text-align: center; padding: 8px; font-size: 11px; border-radius: 4px; cursor: pointer; }
+.approve { background: rgba(46, 204, 113, 0.1); border: 1px solid #2ecc71; color: #2ecc71; }
+.reject { background: rgba(231, 76, 60, 0.1); border: 1px solid #e74c3c; color: #e74c3c; }
