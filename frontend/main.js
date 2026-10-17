@@ -95,9 +95,6 @@ function ensureBot(b) {
   g.fillRect(2, 12, 6, 6);
   container.add(g);
 
-  // 3. Play the idle animation (We skip this for the drawn version, as the drawing is static)
-  // sprite.play("idle");
-
   const label = scene.add.text(p.x, p.y - 35, b.name, { fontSize: "12px", color: "#fff", fontWeight: "bold", stroke: "#000", strokeThickness: 3 }).setOrigin(0.5).setDepth(11);
   const statusText = scene.add.text(p.x, p.y + 30, "", { fontSize: "11px", color: "#9fb3ff", stroke: "#000", strokeThickness: 2 }).setOrigin(0.5).setDepth(11);
   
@@ -113,21 +110,11 @@ function applyBotStatus(msg, instant = false) {
     const dist = Phaser.Math.Distance.Between(bot.sprite.x, bot.sprite.y, t.x, t.y);
     
     if (dist > 2) {
-      // Flipping doesn't work on containers, so we skip it
-      // bot.sprite.setFlipX(...)
-
-      // Play walking animation (Skipped because we don't have an animation)
-      // bot.sprite.play("walk", true);
-
       const targets = [bot.sprite, bot.label, bot.statusText];
       targets.forEach((o, i) => scene.tweens.add({
         targets: o, x: t.x, y: t.y + [0, -35, 30][i],
         duration: instant ? 0 : Math.min(2000, dist * 4), 
-        ease: "Sine.easeInOut",
-        onComplete: () => {
-          // Return to idle when they stop moving
-          // bot.sprite.play("idle", true);
-        }
+        ease: "Sine.easeInOut"
       }));
     }
   }
@@ -146,27 +133,11 @@ new Phaser.Game({
   backgroundColor: "#05060f",
   scene: {
     preload() {
-      // We use a public URL so you don't have to download anything!
-      // this.load.spritesheet('crew', 'https://cdn.jsdelivr.net/gh/photonstorm/phaser3-examples@master/public/assets/sprites/ufo.png', { frameWidth: 32, frameHeight: 32 });
+      // Load the Commander avatar (using a reliable Phaser asset)
+      this.load.spritesheet('commander', 'https://labs.phaser.io/assets/sprites/dude.png', { frameWidth: 32, frameHeight: 48 });
     },
     create() {
       scene = this;
-
-      // Create Animations (Skipped because we are drawing the characters)
-      /*
-      this.anims.create({
-        key: 'idle',
-        frames: [{ key: 'crew', frame: 0 }],
-        frameRate: 1
-      });
-
-      this.anims.create({
-        key: 'walk',
-        frames: [{ key: 'crew', frame: 1 }],
-        frameRate: 10,
-        repeat: -1
-      });
-      */
 
       const g = this.add.graphics().lineStyle(1, 0x121a33);
       for (let x = 0; x <= 12; x++) g.lineBetween(x * TILE, 0, x * TILE, 8 * TILE);
@@ -177,7 +148,84 @@ new Phaser.Game({
           .setOrigin(0).setStrokeStyle(2, 0x8899cc);
         this.add.text(r.col * TILE + 8, r.row * TILE + 6, r.label, { fontSize: "13px", color: "#fff" });
       });
+
+      // --- ADD THE COMMANDER AVATAR ---
+      // Spawn the commander in the center of the Bridge
+      const bridge = ROOMS['bridge'];
+      const startX = (bridge.col + bridge.w / 2) * TILE;
+      const startY = (bridge.row + bridge.h / 2) * TILE;
+      
+      this.commander = this.add.sprite(startX, startY, 'commander', 4).setDepth(20).setScale(1.2);
+      
+      // Add a label above the Commander
+      this.commanderLabel = this.add.text(startX, startY - 40, "COMMANDER", { 
+        fontSize: "12px", color: "#f1c40f", fontWeight: "bold", stroke: "#000", strokeThickness: 3 
+      }).setOrigin(0.5).setDepth(21);
+
+      // Create animations for the commander
+      this.anims.create({
+        key: 'left',
+        frames: this.anims.generateFrameNumbers('commander', { start: 0, end: 3 }),
+        frameRate: 10,
+        repeat: -1
+      });
+      this.anims.create({
+        key: 'turn',
+        frames: [ { key: 'commander', frame: 4 } ],
+        frameRate: 20
+      });
+      this.anims.create({
+        key: 'right',
+        frames: this.anims.generateFrameNumbers('commander', { start: 5, end: 8 }),
+        frameRate: 10,
+        repeat: -1
+      });
+
+      // --- KEYBOARD CONTROLS ---
+      this.cursors = this.input.keyboard.createCursorKeys();
+      this.wasd = this.input.keyboard.addKeys('W,A,S,D');
+
       connect(); 
     },
+    update() {
+      // If the commander doesn't exist yet, do nothing
+      if (!this.commander) return;
+
+      const speed = 3;
+      let moving = false;
+
+      // Left
+      if (this.cursors.left.isDown || this.wasd.A.isDown) {
+        this.commander.x -= speed;
+        this.commander.play('left', true);
+        moving = true;
+      }
+      // Right
+      else if (this.cursors.right.isDown || this.wasd.D.isDown) {
+        this.commander.x += speed;
+        this.commander.play('right', true);
+        moving = true;
+      }
+
+      // Up
+      if (this.cursors.up.isDown || this.wasd.W.isDown) {
+        this.commander.y -= speed;
+        moving = true;
+      }
+      // Down
+      else if (this.cursors.down.isDown || this.wasd.S.isDown) {
+        this.commander.y += speed;
+        moving = true;
+      }
+
+      // If not moving, play the idle 'turn' frame
+      if (!moving) {
+        this.commander.play('turn', true);
+      }
+
+      // Make the label follow the commander
+      this.commanderLabel.x = this.commander.x;
+      this.commanderLabel.y = this.commander.y - 40;
+    }
   },
 });
