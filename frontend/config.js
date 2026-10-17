@@ -10,8 +10,8 @@ const ROOMS = {
 
 // Widened the offsets so they don't overlap and cover each other's text
 const BOT_OFFSETS = { 
-  email_bot: [-90, -20], 
-  data_bot: [-30, -20], 
-  excel_bot: [30, -20], 
-  report_bot: [90, -20] 
+  email_bot: [-90, 20], 
+  data_bot: [-30, 20], 
+  excel_bot: [30, 20], 
+  report_bot: [90, 20] 
 };
