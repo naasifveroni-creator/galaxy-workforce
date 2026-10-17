@@ -526,7 +526,7 @@ export default function App() {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key.toLowerCase() === 'e' && activeRoom && !openRoom) setOpenRoom(activeRoom);
-      if (e.key === 'Escape') setOpenRoom(null);
+      if (e.key === 'Escape') { setOpenRoom(null); setApprovals([]); }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -628,10 +628,7 @@ export default function App() {
         <Minimap bots={bots} commanderPos={commanderPos} />
       </div>
 
-      {/* HUD OVERLAY */}
       <div className={`hud-panel ${isHudExpanded ? 'expanded' : 'collapsed'}`}>
-        
-        {/* THE TOGGLE BUTTON IS NOW OUTSIDE THE CONTENT, BUT INSIDE THE PANEL */}
         <button className="hud-toggle-btn" onClick={() => setIsHudExpanded(!isHudExpanded)}>
           {isHudExpanded ? '▶' : '◀'}
         </button>
