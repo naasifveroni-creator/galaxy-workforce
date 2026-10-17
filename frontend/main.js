@@ -131,7 +131,7 @@ new Phaser.Game({
   scene: {
     preload() {
       this.load.spritesheet('commander', 'https://labs.phaser.io/assets/sprites/dude.png', { frameWidth: 32, frameHeight: 48 });
-      // High-quality sci-fi floor texture from a reliable CDN
+      // Load a subtle, dark tech texture
       this.load.image('sci-fi-floor', 'https://labs.phaser.io/assets/textures/3d.png');
     },
     create() {
@@ -154,26 +154,26 @@ new Phaser.Game({
         const w = r.w * TILE;
         const h = r.h * TILE;
 
-        // Deep Drop Shadow (3D effect)
-        this.add.rectangle(x + 15, y + 15, w, h, 0x000000, 0.9).setOrigin(0);
+        // Deep Drop Shadow
+        this.add.rectangle(x + 10, y + 10, w, h, 0x000000, 0.95).setOrigin(0);
         
         // Base Color
-        this.add.rectangle(x, y, w, h, r.color, 0.95).setOrigin(0);
+        this.add.rectangle(x, y, w, h, r.color, 0.9).setOrigin(0);
         
-        // Tiled Texture Overlay
-        this.add.tileSprite(x, y, w, h, 'sci-fi-floor').setOrigin(0).setAlpha(0.2).setTint(0xffffff);
+        // Tiled Texture Overlay (Much darker so it doesn't look like graph paper)
+        this.add.tileSprite(x, y, w, h, 'sci-fi-floor').setOrigin(0).setAlpha(0.05).setTint(0xffffff);
         
         // Neon Border
-        const neonColor = r.color + 0x444444; // Brighten
-        this.add.rectangle(x, y, w, h).setOrigin(0).setStrokeStyle(4, neonColor);
+        const neonColor = r.color + 0x666666; 
+        this.add.rectangle(x, y, w, h).setOrigin(0).setStrokeStyle(2, neonColor);
         
-        // Inner Shadow (gives wall thickness)
-        this.add.rectangle(x + 6, y + 6, w - 12, h - 12).setOrigin(0).setStrokeStyle(2, 0x000000, 0.6);
+        // Inner Shadow
+        this.add.rectangle(x + 4, y + 4, w - 8, h - 8).setOrigin(0).setStrokeStyle(2, 0x000000, 0.8);
         
         // Room Label
         this.add.text(x + 15, y + 15, r.label, { 
           fontSize: "12px", color: "#fff", fontWeight: "bold", 
-          stroke: "#000", strokeThickness: 3, backgroundColor: "rgba(0,0,0,0.7)", padding: { x: 6, y: 4 } 
+          stroke: "#000", strokeThickness: 3, backgroundColor: "rgba(0,0,0,0.8)", padding: { x: 6, y: 4 } 
         }).setDepth(5);
       });
 
@@ -182,9 +182,8 @@ new Phaser.Game({
       // Bridge: Command Table
       const bx = ROOMS['bridge'].col * TILE + (ROOMS['bridge'].w * TILE / 2);
       const by = ROOMS['bridge'].row * TILE + (ROOMS['bridge'].h * TILE / 2);
-      this.add.rectangle(bx - 70, by - 20, 140, 50, 0x1e293b).setOrigin(0).setStrokeStyle(2, 0x4da6ff);
-      const holo = this.add.circle(bx, by - 20, 20, 0x4da6ff, 0.3);
-      this.tweens.add({ targets: holo, alpha: 0.8, scale: 1.2, yoyo: true, repeat: -1, duration: 1500 });
+      this.add.rectangle(bx - 80, by + 40, 160, 40, 0x0f172a).setOrigin(0).setStrokeStyle(2, 0x4da6ff);
+      this.add.circle(bx, by + 20, 20, 0x4da6ff, 0.3).setStrokeStyle(1, 0x4da6ff);
 
       // Comms Array: Server Racks
       const comms = ROOMS['comms_array'];
@@ -211,13 +210,14 @@ new Phaser.Game({
       const strat = ROOMS['strategy_deck'];
       const sx = strat.col * TILE + (strat.w * TILE / 2);
       const sy = strat.row * TILE + (strat.h * TILE / 2);
-      this.add.ellipse(sx, sy, 140, 80, 0x0f2410).setStrokeStyle(3, 0x2ecc71);
+      this.add.ellipse(sx, sy, 120, 70, 0x0f2410).setStrokeStyle(2, 0x2ecc71);
 
       // Office: Desk
       const office = ROOMS['office'];
       const ox = office.col * TILE + 40;
       const oy = office.row * TILE + 40;
       this.add.rectangle(ox, oy, 160, 60, 0x2c1e38).setOrigin(0).setStrokeStyle(2, 0x9b59b6);
+      this.add.text(ox + 20, oy + 20, "STATUS: ONLINE", { fontSize: "10px", color: "#2ecc71" });
 
       // 5. Commander Avatar
       const officeCenterX = (office.col + office.w / 2) * TILE;
