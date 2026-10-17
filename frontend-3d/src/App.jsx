@@ -630,14 +630,17 @@ export default function App() {
 
       {/* HUD OVERLAY */}
       <div className={`hud-panel ${isHudExpanded ? 'expanded' : 'collapsed'}`}>
-        <button className="hud-toggle-btn" onClick={() => setIsHudExpanded(!isHudExpanded)}>
-          {isHudExpanded ? '▶' : '◀'}
-        </button>
-
         <div className="hud-content">
+          
+          {/* HEADER WITH TOGGLE BUTTON */}
           <div className="system-header">
             <div className="logo-text">GALAXY WORKFORCE</div>
-            <div className="status-badge">ONLINE</div>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <div className="status-badge">ONLINE</div>
+              <button className="hud-toggle-btn" onClick={() => setIsHudExpanded(!isHudExpanded)}>
+                {isHudExpanded ? '▶' : '◀'}
+              </button>
+            </div>
           </div>
 
           <div className="profile-card">
