@@ -68,7 +68,7 @@ const FloatingStatBar = ({ position, label, color, width = 1.5 }) => {
   return (
     <group position={position}>
       <Html center position={[0, 0.3, 0]}>
-        <div style={{ color: color, fontFamily: 'Orbitron', fontSize: '8px', whiteSpace: 'nowrap', textShadow: '1px 1px 2px #000' }}>
+        <div style={{ color: color, fontFamily: 'Orbitron', fontSize: '8px', whiteSpace: 'nowrap', textShadow: '1px 1px 2px #000', fontWeight: 'bold' }}>
           {label}
         </div>
       </Html>
@@ -80,6 +80,37 @@ const FloatingStatBar = ({ position, label, color, width = 1.5 }) => {
         <planeGeometry args={[width, 0.1]} />
         <meshBasicMaterial color={color} />
       </mesh>
+    </group>
+  );
+};
+
+// --- SECURITY CAMERA ---
+const SecurityCamera = ({ position }) => {
+  const cameraRef = useRef();
+  useFrame((state) => {
+    // Pan back and forth like a real security camera
+    if (cameraRef.current) {
+      cameraRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 2) * 0.5;
+    }
+  });
+  
+  return (
+    <group position={position}>
+      <mesh ref={cameraRef}>
+        <boxGeometry args={[0.4, 0.2, 0.3]} />
+        <meshStandardMaterial color="#333" metalness={0.9} roughness={0.1} />
+        {/* Camera Lens */}
+        <mesh position={[0, 0, 0.2]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.1, 0.1, 0.1]} />
+          <meshBasicMaterial color="#ff0000" />
+        </mesh>
+      </mesh>
+      {/* Red Blinking Light */}
+      <mesh position={[0, 0.15, 0]}>
+        <sphereGeometry args={[0.03]} />
+        <meshBasicMaterial color="#ff0000" />
+      </mesh>
+      <pointLight color="#ff0000" intensity={1} distance={2} position={[0, 0.15, 0]} />
     </group>
   );
 };
@@ -102,7 +133,11 @@ const CommandTable = ({ position }) => {
         <meshStandardMaterial color="#00f0ff" emissive="#00f0ff" emissiveIntensity={2} wireframe transparent opacity={0.8} />
       </mesh>
       <pointLight color="#00f0ff" intensity={3} distance={6} position={[0, 0.5, 0]} />
-      <FloatingStatBar position={[0, 1.5, 0]} label="SHIP POWER" color="#00f0ff" />
+      
+      {/* Camera at top right corner of the Bridge */}
+      <SecurityCamera position={[3.5, 1.5, -2.5]} />
+      
+      <FloatingStatBar position={[0, 1.8, 0]} label="SHIP POWER" color="#00f0ff" width={2.5} />
     </group>
   );
 };
@@ -134,7 +169,10 @@ const DataForgeCore = ({ position }) => {
         <meshStandardMaterial color="#051420" metalness={0.9} />
       </mesh>
       <pointLight color="#00f0ff" intensity={2} distance={6} />
-      <FloatingStatBar position={[0, 2, 0]} label="DATA STREAM" color="#00f0ff" />
+      
+      <SecurityCamera position={[2, 1.5, -2]} />
+      
+      <FloatingStatBar position={[0, 2.2, 0]} label="DATA STREAM" color="#00f0ff" />
     </group>
   );
 };
@@ -168,7 +206,10 @@ const CommsMachinery = ({ position }) => {
         </mesh>
       </group>
       <pointLight color="#ff0000" intensity={2} distance={5} position={[0, 1, -1]} />
-      <FloatingStatBar position={[0, 2.5, 0]} label="SIGNAL STRENGTH" color="#ff4d4d" />
+      
+      <SecurityCamera position={[2, 1.5, -2]} />
+      
+      <FloatingStatBar position={[-1, 2.2, 0]} label="SIGNAL" color="#ff4d4d" width={1.2} />
     </group>
   );
 };
@@ -197,7 +238,10 @@ const StrategyMachinery = ({ position }) => {
         </Box>
       </group>
       <pointLight color="#2ecc71" intensity={3} distance={6} position={[0, 1.5, 0]} />
-      <FloatingStatBar position={[0, 2.5, 0]} label="REVENUE TARGET" color="#2ecc71" />
+      
+      <SecurityCamera position={[2, 1.5, -2]} />
+      
+      <FloatingStatBar position={[0, 2.5, 0]} label="REVENUE" color="#2ecc71" width={2} />
     </group>
   );
 };
@@ -213,6 +257,7 @@ const OfficeMachinery = ({ position }) => {
         <meshStandardMaterial color="#9b59b6" emissive="#9b59b6" emissiveIntensity={1.5} />
       </mesh>
       <pointLight color="#9b59b6" intensity={2} distance={4} position={[0, 0.5, 0]} />
+      <SecurityCamera position={[2, 1.5, -2]} />
     </group>
   );
 };
@@ -535,7 +580,6 @@ export default function App() {
             <WarpStars />
             <Grid position={[0, -1, 0]} args={[50, 50]} cellSize={1} cellThickness={0.5} cellColor="#00f0ff" sectionSize={5} sectionThickness={1} sectionColor="#00f0ff" fadeDistance={30} fadeStrength={1} />
 
-            {/* ORBIT CONTROLS LOCKED TO ISOMETRIC ANGLE */}
             <OrbitControls 
               makeDefault 
               maxPolarAngle={Math.PI / 2.5} 
