@@ -21,7 +21,6 @@ const BOT_COLORS = {
   report_bot: '#00ff00'
 };
 
-// 3D Room Component
 const Room = ({ position, size, color, label }) => {
   return (
     <group position={position}>
@@ -40,7 +39,6 @@ const Room = ({ position, size, color, label }) => {
   );
 };
 
-// 3D Bot Component
 const Bot = ({ position, color, name, status }) => {
   return (
     <group position={position}>
@@ -69,38 +67,42 @@ export default function App() {
   const [bots, setBots] = useState({});
   const [approvals, setApprovals] = useState([]);
 
-  const { sendJsonMessage, lastJsonMessage } = useWebSocket(WS_URL, {
+  // NEW SYNTAX FOR LATEST LIBRARY VERSION
+  const { sendJsonMessage, lastMessage } = useWebSocket(WS_URL, {
     shouldReconnect: () => true,
   });
 
   useEffect(() => {
-    if (lastJsonMessage) {
-      const msg = lastJsonMessage;
-      
-      if (msg.type === 'SNAPSHOT') {
-        const newBots = {};
-        msg.bots.forEach(b => newBots[b.bot_id] = b);
-        setBots(newBots);
-        setApprovals(msg.approvals);
-      } 
-      else if (msg.type === 'BOT_STATUS') {
-        setBots(prev => ({ ...prev, [msg.bot_id]: msg }));
-      } 
-      else if (msg.type === 'APPROVAL_REQUEST') {
-        setApprovals(prev => [...prev, msg]);
-      }
-      else if (msg.type === 'APPROVAL_RESOLVED') {
-        setApprovals(prev => prev.filter(a => a.task_id !== msg.task_id));
+    if (lastMessage) {
+      try {
+        const msg = JSON.parse(lastMessage.data);
+        
+        if (msg.type === 'SNAPSHOT') {
+          const newBots = {};
+          msg.bots.forEach(b => newBots[b.bot_id] = b);
+          setBots(newBots);
+          setApprovals(msg.approvals);
+        } 
+        else if (msg.type === 'BOT_STATUS') {
+          setBots(prev => ({ ...prev, [msg.bot_id]: msg }));
+        } 
+        else if (msg.type === 'APPROVAL_REQUEST') {
+          setApprovals(prev => [...prev, msg]);
+        }
+        else if (msg.type === 'APPROVAL_RESOLVED') {
+          setApprovals(prev => prev.filter(a => a.task_id !== msg.task_id));
+        }
+      } catch (e) {
+        console.error("Error parsing message", e);
       }
     }
-  }, [lastJsonMessage]);
+  }, [lastMessage]);
 
   const dispatchBot = (botId) => {
     sendJsonMessage({ type: "START_TASK", bot_id: botId });
   };
 
   const resolveApproval = (taskId, isApproved) => {
-    // Fixed the syntax error here
     sendJsonMessage({ 
       type: isApproved ? 'APPROVE_ACTION' : 'REJECT_ACTION', 
       task_id: taskId 
@@ -111,7 +113,6 @@ export default function App() {
     <div className="app-container">
       
       <div className="canvas-container">
-        {/* Suspense is required to prevent black screens while loading 3D assets */}
         <Suspense fallback={<div style={{color: 'white', position: 'absolute', top: '50%', left: '50%'}}>Loading Ship...</div>}>
           <Canvas camera={{ position: [0, 15, 20], fov: 45 }}>
             <color attach="background" args={['#02040a']} />
