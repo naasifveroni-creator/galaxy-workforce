@@ -1,128 +1,49 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Galaxy Workforce</title>
+    <title>Galaxy Test</title>
     <style>
-        body { 
-            margin: 0; 
-            padding: 0; 
-            background: #05050a; 
-            color: #fff; 
-            display: flex; 
-            height: 100vh; 
-            overflow: hidden; 
-            font-family: 'Courier New', Courier, monospace; 
-        }
-        
-        /* Game Canvas Container */
-        #game-container { 
-            flex: 1; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-        }
-
-        /* Right Side HUD */
-        #hud { 
-            width: 320px; 
-            background: #0d111a; 
-            border-left: 2px solid #1a2035; 
-            padding: 20px; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 25px; 
-            box-shadow: -5px 0 15px rgba(0,0,0,0.5);
-            z-index: 10;
-        }
-
-        h2, h3 { 
-            margin: 0 0 15px 0; 
-            font-size: 16px; 
-            color: #4da6ff; 
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        /* Buttons */
-        button { 
-            background: #131b2e; 
-            color: #a9b7d0; 
-            border: 1px solid #2a3b5c; 
-            padding: 12px; 
-            border-radius: 4px; 
-            cursor: pointer; 
-            text-align: left; 
-            transition: all 0.2s; 
-            font-family: 'Courier New', Courier, monospace;
-            font-weight: bold;
-            font-size: 13px;
-        }
-
-        button:hover { 
-            background: #1c2942; 
-            border-color: #4da6ff;
-            color: #fff;
-        }
-
-        /* Approval Cards */
-        .approval-card { 
-            background: #151a22; 
-            border: 1px solid #f1c40f; 
-            padding: 15px; 
-            border-radius: 4px; 
-            margin-bottom: 10px; 
-            font-size: 12px; 
-            box-shadow: 0 0 10px rgba(241, 196, 15, 0.1);
-        }
-
-        .action-btn {
-            flex: 1; 
-            text-align: center; 
-            padding: 8px; 
-            border-radius: 3px; 
-            cursor: pointer; 
-            font-weight: bold; 
-            border: none;
-        }
+        body { background: #0a0a0a; color: white; font-family: monospace; display: flex; height: 100vh; margin: 0; }
+        #hud { width: 300px; border-right: 1px solid #333; padding: 20px; }
+        button { display: block; width: 100%; margin-bottom: 10px; padding: 10px; background: #1a2035; color: white; border: 1px solid #4da6ff; cursor: pointer; }
+        #log { flex: 1; padding: 20px; background: #000; color: #0f0; overflow-y: auto; }
     </style>
 </head>
 <body>
-
-    <!-- Game Renders Here -->
-    <div id="game-container"></div>
-
-    <!-- Commander HUD -->
     <div id="hud">
-        <div>
-            <h2>Commander HUD</h2>
-            <div id="connection-status" style="font-size: 12px; color: #f1c40f;">connecting...</div>
-        </div>
-
-        <div>
-            <h3>Dispatch</h3>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <button onclick="sendDispatch('email_bot')">▶ Run EmailBot</button>
-                <button onclick="sendDispatch('data_bot')">▶ Run DataBot</button>
-                <button onclick="sendDispatch('excel_bot')">▶ Run ExcelBot</button>
-                <button onclick="sendDispatch('report_bot')">▶ Run ReportBot</button>
-            </div>
-        </div>
-
-        <div style="flex: 1; overflow-y: auto;">
-            <h3>Approvals</h3>
-            <div id="approval-container" style="display: flex; flex-direction: column; gap: 10px;">
-                <!-- Approval cards will appear here -->
-            </div>
-        </div>
+        <h2>Commander HUD</h2>
+        <p id="status" style="color: yellow;">Connecting...</p>
+        <button onclick="sendDispatch('data_bot')">Run DataBot</button>
+        <button onclick="sendDispatch('excel_bot')">Run ExcelBot</button>
     </div>
+    <div id="log">Waiting for logs...</div>
 
-    <!-- Load Phaser from CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
-    
-    <!-- Load Config and Game Logic LAST so the buttons exist in the DOM first -->
-    <script src="config.js"></script>
-    <script src="main.js"></script>
+    <script>
+        // We are hardcoding the URL just to test the connection
+        const test_ws = new WebSocket("wss://orange-system-g4w4gq7r9gxxcw7q-8000.app.github.dev/ws");
+
+        test_ws.onopen = () => {
+            document.getElementById('status').innerText = "🟢 CONNECTED";
+            document.getElementById('status').style.color = "#2ecc71";
+        };
+        
+        test_ws.onclose = () => {
+            document.getElementById('status').innerText = "🔴 DISCONNECTED";
+            document.getElementById('status').style.color = "#e74c3c";
+        };
+
+        test_ws.onmessage = (event) => {
+            document.getElementById('log').innerHTML += "<br>> " + event.data;
+        };
+
+        function sendDispatch(botId) {
+            document.getElementById('log').innerHTML += "<br>> Button clicked for " + botId;
+            if (test_ws.readyState === WebSocket.OPEN) {
+                test_ws.send(JSON.stringify({ type: 'DISPATCH', bot_id: botId }));
+            } else {
+                document.getElementById('log').innerHTML += " (WebSocket not open!)";
+            }
+        }
+    </script>
 </body>
 </html>
