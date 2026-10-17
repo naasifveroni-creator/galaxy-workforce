@@ -317,17 +317,19 @@ const MovingBot = ({ bot }) => {
   );
 };
 
-// --- THE COMMANDER (GOD TIER UPGRADE) ---
+// --- THE COMMANDER (COMBAT READY) ---
 const Commander = ({ activeRoom, setActiveRoom, isPaused, commanderPos }) => {
   const ref = useRef();
   const platformRef = useRef();
-  const droneRef = useRef();
   const keys = useRef({});
   const scanRef = useRef();
   const scanTime = useRef(0);
-  const pingRef = useRef();
-  const pingTime = useRef(0);
   const targetPos = useRef(null);
+  
+  // Combat State
+  const [turrets, setTurrets] = useState([]);
+  const shieldRef = useRef();
+  const shieldTime = useRef(0);
 
   const { camera, gl } = useThree();
   const raycaster = new THREE.Raycaster();
@@ -351,6 +353,7 @@ const Commander = ({ activeRoom, setActiveRoom, isPaused, commanderPos }) => {
   useEffect(() => {
     const down = (e) => {
       keys.current[e.key.toLowerCase()] = true;
+      
       if (e.code === 'Space') {
         if (scanRef.current && scanTime.current <= 0) {
           scanTime.current = 1.5;
@@ -360,14 +363,24 @@ const Commander = ({ activeRoom, setActiveRoom, isPaused, commanderPos }) => {
           scanRef.current.material.opacity = 1;
         }
       }
-      if (e.key.toLowerCase() === 'q') {
-        if (pingRef.current && pingTime.current <= 0) {
-          pingTime.current = 1.0;
-          pingRef.current.position.set(ref.current.position.x, 0.2, ref.current.position.z);
-          pingRef.current.visible = true;
-          pingRef.current.scale.set(1, 1, 1);
-          pingRef.current.material.opacity = 1;
+
+      // NEW: F = SHIELD
+      if (e.key.toLowerCase() === 'f') {
+        if (shieldRef.current && shieldTime.current <= 0) {
+          shieldTime.current = 3.0;
+          shieldRef.current.visible = true;
+          shieldRef.current.scale.set(1, 1, 1);
+          shieldRef.current.material.opacity = 0.5;
         }
+      }
+
+      // NEW: T = TURRET
+      if (e.key.toLowerCase() === 't') {
+        const newTurret = { 
+          id: Date.now(), 
+          pos: [ref.current.position.x + (Math.random() - 0.5) * 2, 0.2, ref.current.position.z + (Math.random() - 0.5) * 2] 
+        };
+        setTurrets(prev => [...prev, newTurret]);
       }
     };
     const up = (e) => keys.current[e.key.toLowerCase()] = false;
@@ -409,21 +422,9 @@ const Commander = ({ activeRoom, setActiveRoom, isPaused, commanderPos }) => {
     });
     if (closestRoom !== activeRoom) setActiveRoom(closestRoom);
 
-    // Holographic Platform Rotation
     if (platformRef.current) {
       platformRef.current.rotation.z -= delta * 0.5;
       platformRef.current.position.set(ref.current.position.x, 0.1, ref.current.position.z);
-    }
-
-    // Drone Orbit
-    if (droneRef.current) {
-      const time = state.clock.elapsedTime;
-      droneRef.current.position.set(
-        ref.current.position.x + Math.cos(time * 2) * 1.2,
-        1.2 + Math.sin(time * 3) * 0.2,
-        ref.current.position.z + Math.sin(time * 2) * 1.2
-      );
-      droneRef.current.rotation.y = time * 2;
     }
 
     if (scanTime.current > 0) {
@@ -436,43 +437,59 @@ const Commander = ({ activeRoom, setActiveRoom, isPaused, commanderPos }) => {
       }
     }
 
-    if (pingTime.current > 0) {
-      pingTime.current -= delta;
-      if (pingRef.current) {
-        const scale = 1 + (1.0 - pingTime.current) * 8;
-        pingRef.current.scale.set(scale, scale, 1);
-        pingRef.current.material.opacity = Math.max(0, pingTime.current / 1.0);
-        if (pingTime.current <= 0) pingRef.current.visible = false;
+    // Shield Animation
+    if (shieldTime.current > 0) {
+      shieldTime.current -= delta;
+      if (shieldRef.current) {
+        shieldRef.current.rotation.y += delta;
+        const scale = 1 + Math.sin(state.clock.elapsedTime * 10) * 0.05;
+        shieldRef.current.scale.set(scale, scale, scale);
+        shieldRef.current.material.opacity = Math.max(0, shieldTime.current / 3.0);
+        if (shieldTime.current <= 0) shieldRef.current.visible = false;
       }
     }
   });
 
   return (
     <>
-      {/* Holographic Platform (Separate so it can be updated independently) */}
+      {/* Holographic Platform */}
       <mesh ref={platformRef} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[0.8, 1.0, 6]} />
         <meshBasicMaterial color="#f1c40f" transparent opacity={0.6} side={THREE.DoubleSide} />
-      </mesh>
-      
-      {/* Drone Companion */}
-      <mesh ref={droneRef}>
-        <sphereGeometry args={[0.1, 8, 8]} />
-        <meshStandardMaterial color="#00f0ff" emissive="#00f0ff" emissiveIntensity={2} />
       </mesh>
       
       <group ref={ref} position={[8, 0.6, 8]}>
         <Crewmate3D color="#f1c40f" name="COMMANDER" isCommander={true} />
         <pointLight color="#f1c40f" intensity={2} distance={4} position={[0, 0.5, 0]} />
         
+        {/* NEW: Combat Rifle */}
+        <group position={[0.4, 0.2, -0.2]} rotation={[0, 0, -0.5]}>
+          <mesh><boxGeometry args={[0.1, 0.1, 0.8]} /><meshStandardMaterial color="#333" metalness={0.9} /></mesh>
+          <mesh position={[0, 0, 0.4]}><boxGeometry args={[0.05, 0.2, 0.1]} /><meshStandardMaterial color="#111" /></mesh>
+          <pointLight color="#00f0ff" intensity={2} distance={1} position={[0, 0, 0.5]} />
+        </group>
+
+        {/* NEW: Energy Shield Dome */}
+        <mesh ref={shieldRef} visible={false}>
+          <sphereGeometry args={[2.5, 32, 32]} />
+          <meshBasicMaterial color="#00f0ff" transparent opacity={0.3} wireframe />
+        </mesh>
+
         <mesh ref={scanRef} rotation={[-Math.PI / 2, 0, 0]} visible={false} position={[0, 0, 0]}>
           <ringGeometry args={[0.8, 1, 32]} /><meshBasicMaterial color="#00f0ff" transparent opacity={1} side={THREE.DoubleSide} />
         </mesh>
-
-        <mesh ref={pingRef} rotation={[-Math.PI / 2, 0, 0]} visible={false} position={[0, 0, 0]}>
-          <ringGeometry args={[0.8, 1, 32]} /><meshBasicMaterial color="#e74c3c" transparent opacity={1} side={THREE.DoubleSide} />
-        </mesh>
       </group>
+
+      {/* NEW: Render Deployed Turrets */}
+      {turrets.map(turret => (
+        <group key={turret.id} position={turret.pos}>
+          <mesh><cylinderGeometry args={[0.2, 0.3, 0.2]} /><meshStandardMaterial color="#333" /></mesh>
+          <mesh position={[0, 0.2, 0]} rotation={[0, Date.now() % 6, 0]}>
+             <boxGeometry args={[0.1, 0.1, 0.4]} /><meshStandardMaterial color="#e74c3c" emissive="#e74c3c" />
+          </mesh>
+          <pointLight color="#e74c3c" intensity={1} distance={2} />
+        </group>
+      ))}
     </>
   );
 };
@@ -645,7 +662,8 @@ export default function App() {
               <div>⌨️ <strong>WASD:</strong> Move manually</div>
               <div>⚡ <strong>Hold Shift:</strong> Overclock Speed</div>
               <div>🔵 <strong>Spacebar:</strong> Tactical Scan</div>
-              <div>🔴 <strong>Q Key:</strong> Deploy Alert Ping</div>
+              <div>🛡️ <strong>F Key:</strong> Activate Energy Shield</div>
+              <div>🔫 <strong>T Key:</strong> Deploy Combat Turret</div>
             </div>
           </div>
         </div>
