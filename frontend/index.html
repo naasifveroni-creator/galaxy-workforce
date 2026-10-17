@@ -1,49 +1,189 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Galaxy Test</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galaxy Workforce</title>
     <style>
-        body { background: #0a0a0a; color: white; font-family: monospace; display: flex; height: 100vh; margin: 0; }
-        #hud { width: 300px; border-right: 1px solid #333; padding: 20px; }
-        button { display: block; width: 100%; margin-bottom: 10px; padding: 10px; background: #1a2035; color: white; border: 1px solid #4da6ff; cursor: pointer; }
-        #log { flex: 1; padding: 20px; background: #000; color: #0f0; overflow-y: auto; }
+        body { 
+            margin: 0; padding: 0; background: #05050a; color: #fff; 
+            display: flex; height: 100vh; font-family: 'Courier New', Courier, monospace; 
+        }
+        
+        #game-view { flex: 1; display: flex; justify-content: center; align-items: center; background: radial-gradient(circle, #111 0%, #000 100%); }
+        
+        #hud { 
+            width: 350px; background: #0d111a; border-left: 2px solid #1a2035; 
+            padding: 20px; display: flex; flex-direction: column; gap: 20px; 
+            box-shadow: -5px 0 15px rgba(0,0,0,0.5); z-index: 10;
+        }
+
+        h2, h3 { margin: 0 0 10px 0; font-size: 16px; color: #4da6ff; text-transform: uppercase; letter-spacing: 1px; }
+
+        button { 
+            background: #131b2e; color: #a9b7d0; border: 1px solid #2a3b5c; 
+            padding: 12px; border-radius: 4px; cursor: pointer; text-align: left; 
+            transition: all 0.2s; font-family: 'Courier New', Courier, monospace; font-weight: bold;
+        }
+        button:hover { background: #1c2942; border-color: #4da6ff; color: #fff; }
+        
+        .action-btn { padding: 8px; border-radius: 3px; cursor: pointer; font-weight: bold; border: none; color: white; }
+        .approve { background: #2ecc71; }
+        .reject { background: #e74c3c; }
+
+        .approval-card { 
+            background: #151a22; border: 1px solid #f1c40f; padding: 15px; 
+            border-radius: 4px; margin-bottom: 10px; font-size: 12px; 
+            box-shadow: 0 0 10px rgba(241, 196, 15, 0.1);
+        }
+
+        /* The Bots! */
+        .bot { 
+            position: absolute; width: 40px; height: 40px; border-radius: 50%; 
+            display: flex; justify-content: center; align-items: center; 
+            font-size: 10px; font-weight: bold; color: black; transition: all 2s linear;
+        }
+        .bot-label { position: absolute; top: -20px; white-space: nowrap; color: white; font-size: 12px; }
     </style>
 </head>
 <body>
-    <div id="hud">
-        <h2>Commander HUD</h2>
-        <p id="status" style="color: yellow;">Connecting...</p>
-        <button onclick="sendDispatch('data_bot')">Run DataBot</button>
-        <button onclick="sendDispatch('excel_bot')">Run ExcelBot</button>
+
+    <!-- The Galaxy Map -->
+    <div id="game-view">
+        <div id="map" style="position: relative; width: 800px; height: 600px; border: 1px solid #333; background: url('https://www.transparenttextures.com/patterns/stardust.png');">
+            <!-- Rooms -->
+            <div style="position: absolute; top: 0; left: 0; width: 300px; height: 200px; background: rgba(69, 26, 26, 0.5); border: 1px solid #555;">Comms Array</div>
+            <div style="position: absolute; top: 0; right: 0; width: 300px; height: 200px; background: rgba(15, 58, 77, 0.5); border: 1px solid #555;">Data Forge</div>
+            <div style="position: absolute; bottom: 0; left: 0; width: 300px; height: 200px; background: rgba(26, 61, 26, 0.5); border: 1px solid #555;">Strategy Deck</div>
+            <div style="position: absolute; bottom: 50px; left: 250px; width: 300px; height: 150px; background: rgba(30, 41, 59, 0.8); border: 1px solid #4da6ff;">Bridge (HQ)</div>
+            <!-- Bots will spawn here -->
+        </div>
     </div>
-    <div id="log">Waiting for logs...</div>
 
+    <!-- The HUD -->
+    <div id="hud">
+        <div>
+            <h2>Commander HUD</h2>
+            <div id="connection-status" style="font-size: 12px; color: #f1c40f;">connecting...</div>
+        </div>
+
+        <div>
+            <h3>Dispatch</h3>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button onclick="sendDispatch('email_bot')">▶ Run EmailBot</button>
+                <button onclick="sendDispatch('data_bot')">▶ Run DataBot</button>
+                <button onclick="sendDispatch('excel_bot')">▶ Run ExcelBot</button>
+                <button onclick="sendDispatch('report_bot')">▶ Run ReportBot</button>
+            </div>
+        </div>
+
+        <div style="flex: 1; overflow-y: auto;">
+            <h3>Approvals</h3>
+            <div id="approval-container" style="display: flex; flex-direction: column; gap: 10px;"></div>
+        </div>
+    </div>
+
+    <!-- ALL THE MAGIC HAPPENS HERE -->
     <script>
-        // We are hardcoding the URL just to test the connection
-        const test_ws = new WebSocket("wss://orange-system-g4w4gq7r9gxxcw7q-8000.app.github.dev/ws");
+        const WS_URL = "wss://orange-system-g4w4gq7r9gxxcw7q-8000.app.github.dev/ws";
+        let ws;
+        let bots = {}; // Store bot elements
 
-        test_ws.onopen = () => {
-            document.getElementById('status').innerText = "🟢 CONNECTED";
-            document.getElementById('status').style.color = "#2ecc71";
-        };
-        
-        test_ws.onclose = () => {
-            document.getElementById('status').innerText = "🔴 DISCONNECTED";
-            document.getElementById('status').style.color = "#e74c3c";
+        const ROOMS = {
+            bridge: { x: 400, y: 475 },
+            comms_array: { x: 150, y: 100 },
+            data_forge: { x: 650, y: 100 },
+            strategy_deck: { x: 150, y: 500 }
         };
 
-        test_ws.onmessage = (event) => {
-            document.getElementById('log').innerHTML += "<br>> " + event.data;
-        };
+        function connectWebSocket() {
+            ws = new WebSocket(WS_URL);
+
+            ws.onopen = () => {
+                document.getElementById('connection-status').innerHTML = '🟢 connected';
+                document.getElementById('connection-status').style.color = '#2ecc71';
+            };
+
+            ws.onclose = () => {
+                document.getElementById('connection-status').innerHTML = '🔴 disconnected';
+                document.getElementById('connection-status').style.color = '#e74c3c';
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === 'SNAPSHOT') {
+                    data.bots.forEach(botData => updateBot(botData));
+                } else if (data.type === 'BOT_STATUS') {
+                    updateBot(data);
+                } else if (data.type === 'APPROVAL_REQUEST') {
+                    showApprovalCard(data);
+                }
+            };
+        }
+
+        function updateBot(data) {
+            let botEl = bots[data.bot_id];
+            
+            // Create the bot if it doesn't exist
+            if (!botEl) {
+                botEl = document.createElement('div');
+                botEl.className = 'bot';
+                botEl.style.backgroundColor = data.color;
+                botEl.innerHTML = `<div class="bot-label">${data.name}</div><span>${data.status}</span>`;
+                botEl.style.left = ROOMS.bridge.x + 'px';
+                botEl.style.top = ROOMS.bridge.y + 'px';
+                document.getElementById('map').appendChild(botEl);
+                bots[data.bot_id] = botEl;
+            }
+
+            // Update status text
+            botEl.querySelector('span').innerText = data.status.replace('_', ' ');
+
+            // Move the bot
+            const room = ROOMS[data.location] || ROOMS.bridge;
+            // Add a tiny offset so they don't stack perfectly
+            const offset = data.bot_id === 'data_bot' ? 20 : data.bot_id === 'excel_bot' ? -20 : 0;
+            
+            botEl.style.left = (room.x + offset) + 'px';
+            botEl.style.top = room.y + 'px';
+        }
+
+        function showApprovalCard(data) {
+            const container = document.getElementById('approval-container');
+            const card = document.createElement('div');
+            card.className = 'approval-card';
+            card.id = `card-${data.bot_id}`;
+            
+            let preview = data.preview ? JSON.stringify(data.preview, null, 2) : "No preview data.";
+            
+            card.innerHTML = `
+                <div style="font-weight:bold; color:#4da6ff; margin-bottom:5px;">${data.bot_id}</div>
+                <div style="margin-bottom:10px;">${data.summary}</div>
+                <pre style="background:#000; padding:5px; font-size:10px; max-height:100px; overflow-y:auto;">${preview}</pre>
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <button class="action-btn approve" onclick="sendApproval('${data.bot_id}', true)">APPROVE</button>
+                    <button class="action-btn reject" onclick="sendApproval('${data.bot_id}', false)">REJECT</button>
+                </div>
+            `;
+            container.appendChild(card);
+        }
 
         function sendDispatch(botId) {
-            document.getElementById('log').innerHTML += "<br>> Button clicked for " + botId;
-            if (test_ws.readyState === WebSocket.OPEN) {
-                test_ws.send(JSON.stringify({ type: 'DISPATCH', bot_id: botId }));
-            } else {
-                document.getElementById('log').innerHTML += " (WebSocket not open!)";
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'DISPATCH', bot_id: botId }));
             }
         }
+
+        function sendApproval(botId, isApproved) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'APPROVE_ACTION', bot_id: botId, approved: isApproved }));
+                const card = document.getElementById(`card-${botId}`);
+                if (card) card.remove();
+            }
+        }
+
+        // Start the connection
+        connectWebSocket();
     </script>
 </body>
 </html>
