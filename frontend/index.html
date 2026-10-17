@@ -43,46 +43,54 @@
         </div>
     </div>
 
-    <!-- ALL the logic is here so it loads AFTER the buttons exist -->
+    <!-- EVERYTHING IS DEFINED RIGHT HERE -->
     <script>
         const WS_URL = "wss://orange-system-g4w4gq7r9gxxcw7q-8000.app.github.dev/ws";
         let ws;
         let gameScene;
         let bots = {};
 
+        const TILE = 80;
         const ROOMS = {
-            bridge: { x: 400, y: 500, label: "Bridge (HQ)", color: 0x1e293b },
-            comms_array: { x: 150, y: 150, label: "Comms Array", color: 0x451a1a },
-            data_forge: { x: 650, y: 150, label: "Data Forge", color: 0x0f3a4d },
-            strategy_deck: { x: 150, y: 450, label: "Strategy Deck", color: 0x1a3d1a }
+            bridge:        { label: "Bridge (HQ)",     col: 5, row: 4, w: 3, h: 2, color: 0x1e293b },
+            comms_array:   { label: "Comms Array",     col: 0, row: 0, w: 4, h: 3, color: 0x451a1a },
+            data_forge:    { label: "Data Forge",      col: 8, row: 0, w: 4, h: 3, color: 0x0f3a4d },
+            strategy_deck: { label: "Strategy Deck",   col: 0, row: 5, w: 4, h: 3, color: 0x1a3d1a }
         };
+        const BOT_OFFSETS = { email_bot: [-40, 0], data_bot: [-10, 0], excel_bot: [20, 0], report_bot: [50, 0] };
 
-        // 1. SET UP PHASER
+        function create() {
+            gameScene = this;
+
+            // Draw Grid
+            const graphics = this.add.graphics();
+            graphics.lineStyle(1, 0x333333, 1);
+            for (let x = 0; x <= 1200; x += TILE) graphics.lineBetween(x, 0, x, 800);
+            for (let y = 0; y <= 800; y += TILE) graphics.lineBetween(0, y, 1200, y);
+
+            // Draw Rooms
+            for (const [key, room] of Object.entries(ROOMS)) {
+                const x = room.col * TILE;
+                const y = room.row * TILE;
+                const w = room.w * TILE;
+                const h = room.h * TILE;
+                this.add.rectangle(x, y, w, h, room.color, 0.6).setOrigin(0, 0).setStrokeStyle(2, 0x555555);
+                this.add.text(x + 10, y + 10, room.label, { fontFamily: 'monospace', fontSize: '14px', color: '#ffffff' });
+            }
+
+            connectWebSocket.call(this);
+        }
+
         const config = {
             type: Phaser.AUTO,
-            width: 800,
-            height: 600,
+            width: 1100,
+            height: 700,
             parent: 'game-container',
             backgroundColor: '#0a0a0a',
             scene: { create: create }
         };
-
-        function create() {
-            gameScene = this; // Save the scene so we can use tweens later
-
-            // Draw Rooms
-            for (const [key, room] of Object.entries(ROOMS)) {
-                this.add.rectangle(room.x, room.y, 250, 200, room.color, 0.5).setStrokeStyle(2, 0x555555);
-                this.add.text(room.x - 110, room.y - 90, room.label, { fontFamily: 'monospace', fontSize: '14px', color: '#fff' });
-            }
-            
-            // Connect WebSocket
-            connectWebSocket();
-        }
-
         new Phaser.Game(config);
 
-        // 2. WEBSOCKET LOGIC
         function connectWebSocket() {
             ws = new WebSocket(WS_URL);
 
@@ -99,75 +107,82 @@
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
                 if (data.type === 'SNAPSHOT') {
-                    data.bots.forEach(botData => updateBot(botData));
+                    data.bots.forEach(botData => applyBotStatus.call(this, botData));
                 } else if (data.type === 'BOT_STATUS') {
-                    updateBot(data);
+                    applyBotStatus.call(this, data);
                 } else if (data.type === 'APPROVAL_REQUEST') {
                     showApprovalCard(data);
                 }
             };
         }
 
-        // 3. BOT MOVEMENT LOGIC
-        function updateBot(data) {
+        function applyBotStatus(data) {
             let bot = bots[data.bot_id];
-            const room = ROOMS[data.location] || ROOMS.bridge;
-            
-            // Calculate offset so bots don't stack
-            const offset = data.bot_id === 'email_bot' ? -40 : data.bot_id === 'data_bot' ? -15 : data.bot_id === 'excel_bot' ? 15 : 40;
-            const targetX = room.x + offset;
-            const targetY = room.y + 20; // slightly lower so they don't cover the room text
+            const targetRoom = ROOMS[data.location] || ROOMS['bridge'];
+            const offset = BOT_OFFSETS[data.bot_id] || [0, 0];
 
-            // Create the bot if it doesn't exist
+            const targetX = (targetRoom.col * TILE) + (targetRoom.w * TILE / 2) + offset[0];
+            const targetY = (targetRoom.row * TILE) + (targetRoom.h * TILE / 2) + offset[1];
+
             if (!bot) {
-                const circle = gameScene.add.circle(targetX, targetY, 15, data.color).setStrokeStyle(2, 0xffffff);
-                const label = gameScene.add.text(targetX, targetY - 30, data.name, { fontFamily: 'monospace', fontSize: '12px', color: '#fff' }).setOrigin(0.5);
-                const statusLabel = gameScene.add.text(targetX, targetY + 25, data.status.replace('_', ' '), { fontFamily: 'monospace', fontSize: '10px', color: '#aaa' }).setOrigin(0.5);
-                
-                bot = { sprite: circle, label: label, status: statusLabel };
+                const circle = this.add.circle(targetX, targetY, 15, data.color).setStrokeStyle(2, 0xffffff);
+                const label = this.add.text(targetX, targetY - 25, data.name, { fontFamily: 'monospace', fontSize: '12px', color: '#ffffff' }).setOrigin(0.5);
+                const statusLabel = this.add.text(targetX, targetY + 25, data.status.replace('_', ' '), { fontFamily: 'monospace', fontSize: '10px', color: '#aaaaaa' }).setOrigin(0.5);
+                bot = { sprite: circle, label: label, statusLabel: statusLabel };
                 bots[data.bot_id] = bot;
             }
 
-            // Update text
-            bot.status.setText(data.status.replace('_', ' '));
+            bot.statusLabel.setText(data.status.replace('_', ' '));
 
-            // Move the bot if it needs to move
-            if (bot.sprite.x !== targetX || bot.sprite.y !== targetY) {
-                gameScene.tweens.add({
-                    targets: [bot.sprite, bot.label, bot.status],
+            const currentTargetX = bot.sprite.getData('targetX');
+            const currentTargetY = bot.sprite.getData('targetY');
+
+            if (currentTargetX !== targetX || currentTargetY !== targetY) {
+                bot.sprite.setData('targetX', targetX);
+                bot.sprite.setData('targetY', targetY);
+                this.tweens.killTweensOf([bot.sprite, bot.label, bot.statusLabel]);
+                this.tweens.add({
+                    targets: [bot.sprite, bot.label, bot.statusLabel],
                     x: targetX,
-                    y: function(target) {
-                        if (target === bot.label) return targetY - 30;
-                        if (target === bot.status) return targetY + 25;
+                    y: (target) => {
+                        if (target === bot.label) return targetY - 25;
+                        if (target === bot.statusLabel) return targetY + 25;
                         return targetY;
                     },
-                    duration: 2000, // 2 seconds to walk
+                    duration: 2000,
                     ease: 'Linear'
                 });
             }
+
+            if (data.status === 'working' || data.status === 'waiting_approval' || data.status === 'executing') {
+                if (!bot.pulseTween) {
+                    bot.pulseTween = this.tweens.add({ targets: bot.sprite, scale: 1.3, duration: 500, yoyo: true, repeat: -1 });
+                }
+            } else {
+                if (bot.pulseTween) {
+                    bot.pulseTween.stop();
+                    bot.pulseTween = null;
+                    bot.sprite.setScale(1);
+                }
+            }
         }
 
-        // 4. HUD LOGIC
         function showApprovalCard(data) {
             const container = document.getElementById('approval-container');
+            let previewText = data.preview ? JSON.stringify(data.preview, null, 2) : "";
             const card = document.createElement('div');
             card.className = 'approval-card';
             card.id = `card-${data.bot_id}`;
             card.innerHTML = `
-                <div style="font-weight:bold; color:#4da6ff; margin-bottom:5px;">${data.bot_id}</div>
-                <div style="margin-bottom:10px;">${data.summary}</div>
-                <div style="display:flex; gap:10px;">
-                    <button class="action-btn approve" onclick="sendApproval('${data.bot_id}', true)">APPROVE</button>
-                    <button class="action-btn reject" onclick="sendApproval('${data.bot_id}', false)">REJECT</button>
+                <div style="font-weight: bold; margin-bottom: 5px; color: #4da6ff;">${data.bot_id}</div>
+                <div style="margin-bottom: 10px;">${data.summary}</div>
+                <pre style="background: #000; padding: 10px; border-radius: 4px; font-size: 10px; max-height: 150px; overflow-y: auto;">${previewText}</pre>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button onclick="sendApproval('${data.bot_id}', true)" class="action-btn approve" style="flex: 1;">APPROVE</button>
+                    <button onclick="sendApproval('${data.bot_id}', false)" class="action-btn reject" style="flex: 1;">REJECT</button>
                 </div>
             `;
             container.appendChild(card);
-        }
-
-        function sendDispatch(botId) {
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({ type: 'DISPATCH', bot_id: botId }));
-            }
         }
 
         function sendApproval(botId, isApproved) {
@@ -175,6 +190,12 @@
                 ws.send(JSON.stringify({ type: 'APPROVE_ACTION', bot_id: botId, approved: isApproved }));
                 const card = document.getElementById(`card-${botId}`);
                 if (card) card.remove();
+            }
+        }
+
+        function sendDispatch(botId) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'DISPATCH', bot_id: botId }));
             }
         }
     </script>
