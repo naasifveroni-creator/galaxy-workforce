@@ -62,12 +62,12 @@ const roomCenter = (id, botId) => {
   return { x: (r.col + r.w / 2) * TILE + ox, y: (r.row + r.h / 2) * TILE + oy };
 };
 
-// Map bot IDs to specific frame numbers on the sheet
+// These frame numbers match the remote sprite sheet
 const BOT_FRAMES = {
-  email_bot: { idle: 0, walk: [0, 1, 2] },     // Red
-  data_bot:  { idle: 3, walk: [3, 4, 5] },     // Yellow
-  excel_bot: { idle: 6, walk: [6, 7, 8] },     // Blue
-  report_bot:{ idle: 36, walk: [36, 37, 38] }  // Green (starts row 4)
+  email_bot: { idle: 0, walk: [0, 1, 2] },      // Red
+  data_bot:  { idle: 3, walk: [3, 4, 5] },      // Yellow
+  excel_bot: { idle: 6, walk: [6, 7, 8] },      // Blue
+  report_bot:{ idle: 12, walk: [12, 13, 14] }   // Green
 };
 
 function ensureBot(b) {
@@ -77,13 +77,12 @@ function ensureBot(b) {
   
   const frames = BOT_FRAMES[b.bot_id] || BOT_FRAMES.email_bot;
   
-  // The sprite is 128x128. We scale it down to 0.4 so it fits in the rooms.
-  const sprite = scene.add.sprite(p.x, p.y, "crew", frames.idle).setDepth(10).setScale(0.4);
+  // 64px sprites, scaled to 0.8 to fit perfectly in the room
+  const sprite = scene.add.sprite(p.x, p.y, "crew", frames.idle).setDepth(10).setScale(0.8);
 
-  const label = scene.add.text(p.x, p.y - 35, b.name, { fontSize: "12px", color: "#fff", fontWeight: "bold", stroke: "#000", strokeThickness: 3 }).setOrigin(0.5).setDepth(11);
-  const statusText = scene.add.text(p.x, p.y + 30, "", { fontSize: "11px", color: "#9fb3ff", stroke: "#000", strokeThickness: 2 }).setOrigin(0.5).setDepth(11);
+  const label = scene.add.text(p.x, p.y - 30, b.name, { fontSize: "12px", color: "#fff", fontWeight: "bold", stroke: "#000", strokeThickness: 3 }).setOrigin(0.5).setDepth(11);
+  const statusText = scene.add.text(p.x, p.y + 25, "", { fontSize: "11px", color: "#9fb3ff", stroke: "#000", strokeThickness: 2 }).setOrigin(0.5).setDepth(11);
   
-  // Create a custom walk animation for this specific bot's color
   const walkAnimKey = `walk-${b.bot_id}`;
   if (!scene.anims.exists(walkAnimKey)) {
     scene.anims.create({
@@ -111,7 +110,7 @@ function applyBotStatus(msg, instant = false) {
 
       const targets = [bot.sprite, bot.label, bot.statusText];
       targets.forEach((o, i) => scene.tweens.add({
-        targets: o, x: t.x, y: t.y + [0, -35, 30][i],
+        targets: o, x: t.x, y: t.y + [0, -30, 25][i],
         duration: instant ? 0 : Math.min(2000, dist * 4), 
         ease: "Sine.easeInOut",
         onComplete: () => {
@@ -123,7 +122,7 @@ function applyBotStatus(msg, instant = false) {
     }
   }
 
-  if (bot.pulse) { bot.pulse.stop(); bot.pulse = null; bot.sprite.setScale(0.4); }
+  if (bot.pulse) { bot.pulse.stop(); bot.pulse = null; bot.sprite.setScale(0.8); }
   if (msg.status === "awaiting_approval") {
     bot.pulse = scene.tweens.add({ targets: bot.sprite, y: bot.sprite.y - 10, yoyo: true, repeat: -1, duration: 300 });
   }
@@ -137,8 +136,8 @@ new Phaser.Game({
   backgroundColor: "#05060f",
   scene: {
     preload() {
-      // Load the 1536x1536 image, sliced into 128x128 squares
-      this.load.spritesheet('crew', 'crew.png', { frameWidth: 128, frameHeight: 128 });
+      // Loads a 100% transparent PNG directly from the web!
+      this.load.spritesheet('crew', 'https://labs.phaser.io/assets/sprites/amongus.png', { frameWidth: 64, frameHeight: 64 });
     },
     create() {
       scene = this;
