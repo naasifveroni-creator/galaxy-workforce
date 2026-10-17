@@ -33,28 +33,28 @@ body {
   z-index: 10;
 }
 
-/* HUD PANEL */
+/* HUD PANEL - HARD LOCKED TO 320px */
 .hud-panel {
+  width: 320px;
+  min-width: 320px;
+  max-width: 320px;
+  flex-shrink: 0;
   background: #060a12;
   border-left: 2px solid rgba(0, 240, 255, 0.2);
   display: flex;
   flex-direction: column;
   z-index: 100;
   box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
-  transition: width 0.3s ease;
+  transition: width 0.3s ease, min-width 0.3s ease;
   box-sizing: border-box;
-  flex-shrink: 0; /* CRITICAL: Prevents the HUD from being squished */
   overflow: hidden;
-}
-
-.hud-panel.expanded {
-  width: 320px;
-  padding: 15px;
 }
 
 .hud-panel.collapsed {
   width: 0px;
+  min-width: 0px;
   padding: 0px;
+  border: none;
 }
 
 /* Content inside the HUD */
@@ -64,6 +64,8 @@ body {
   gap: 15px;
   width: 100%;
   height: 100%;
+  padding: 15px;
+  box-sizing: border-box;
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -85,6 +87,7 @@ body {
   font-weight: 900;
   color: #00f0ff;
   letter-spacing: 1px;
+  white-space: nowrap;
 }
 
 .hud-toggle-btn {
@@ -97,22 +100,12 @@ body {
   padding: 2px 8px;
   line-height: 1;
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 .hud-toggle-btn:hover {
   background: #00f0ff;
   color: #000;
   box-shadow: 0 0 10px #00f0ff;
-}
-
-.status-badge {
-  background: rgba(46, 204, 113, 0.2);
-  border: 1px solid #2ecc71;
-  color: #2ecc71;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 9px;
-  font-weight: bold;
-  font-family: 'Share Tech Mono', monospace;
 }
 
 /* Profile Card */
@@ -148,6 +141,7 @@ h4 {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 1px;
+  white-space: nowrap;
 }
 
 /* Telemetry Grid */
@@ -194,6 +188,7 @@ h4 {
   padding: 6px;
   width: 100%;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .bot-row {
@@ -267,6 +262,8 @@ h4 {
   width: 100%;
   display: flex;
   justify-content: space-between;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .button-group button:hover {
@@ -285,6 +282,7 @@ h4 {
   font-size: 12px;
   box-sizing: border-box;
   width: 100%;
+  overflow: hidden;
 }
 
 .row {
