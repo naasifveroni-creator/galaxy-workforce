@@ -123,6 +123,7 @@ function applyBotStatus(msg, instant = false) {
   }
 }
 
+// ---------- Phaser ----------
 new Phaser.Game({
   type: Phaser.AUTO,
   parent: "game",
@@ -131,6 +132,11 @@ new Phaser.Game({
   scene: {
     preload() {
       this.load.spritesheet('commander', 'https://labs.phaser.io/assets/sprites/dude.png', { frameWidth: 32, frameHeight: 48 });
+      
+      // BASE64 TEXTURE: A dark sci-fi grid floor
+      // This is embedded directly in the code so it NEVER fails to load
+      const gridTexture = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAFUlEQVR42mNkYPhfz0AEYBxVSF+FAP5FDvcfRYWgAAAAAElFTkSuQmCC';
+      this.load.image('grid', gridTexture);
     },
     create() {
       scene = this;
@@ -142,35 +148,41 @@ new Phaser.Game({
         stars.fillCircle(Math.random() * 960, Math.random() * 640, Math.random() * 1.5);
       }
 
-      // 2. Draw All Rooms Dynamically
+      // 2. Draw All Rooms with Textures and Neon
       Object.entries(ROOMS).forEach(([key, r]) => {
         const x = r.col * TILE;
         const y = r.row * TILE;
         const w = r.w * TILE;
         const h = r.h * TILE;
 
-        // Shadow
+        // Deep Shadow
         this.add.rectangle(x + 10, y + 10, w, h, 0x000000, 0.9).setOrigin(0);
-        // Floor
+        
+        // Base Floor Color
         this.add.rectangle(x, y, w, h, r.color).setOrigin(0);
         
-        // Glowing Walls
-        const wallColor = r.color + 0x444444; // Brighten the color for the border
-        const wallG = this.add.graphics().lineStyle(4, wallColor, 0.8);
-        wallG.strokeRect(x, y, w, h);
+        // Tiled Texture Overlay
+        this.add.tileSprite(x, y, w, h, 'grid').setOrigin(0).setAlpha(0.3).setTint(0xaaaaaa);
         
-        // Room Label
-        this.add.text(x + 10, y + 10, r.label, { 
-          fontSize: "12px", color: "#fff", fontWeight: "bold", stroke: "#000", strokeThickness: 2 
+        // Glowing Wall (Neon Border)
+        const neonColor = r.color + 0x333333; 
+        this.add.rectangle(x, y, w, h).setOrigin(0).setStrokeStyle(3, neonColor);
+        
+        // Inner Dark Wall (gives thickness)
+        this.add.rectangle(x + 6, y + 6, w - 12, h - 12).setOrigin(0).setStrokeStyle(1, 0x000000, 0.5);
+        
+        // Room Label with Background
+        this.add.text(x + 15, y + 15, r.label, { 
+          fontSize: "12px", color: "#fff", fontWeight: "bold", 
+          stroke: "#000", strokeThickness: 3, backgroundColor: "rgba(0,0,0,0.6)", padding: { x: 6, y: 4 } 
         }).setDepth(5);
       });
 
-      // --- Specific Room Machinery ---
-      
-      const bx = ROOMS['bridge'].col * TILE + (ROOMS['bridge'].w * TILE / 2);
-      const by = ROOMS['bridge'].row * TILE + (ROOMS['bridge'].h * TILE / 2);
+      // --- Room Specific Machinery ---
       
       // Bridge: Command Table
+      const bx = ROOMS['bridge'].col * TILE + (ROOMS['bridge'].w * TILE / 2);
+      const by = ROOMS['bridge'].row * TILE + (ROOMS['bridge'].h * TILE / 2);
       this.add.rectangle(bx - 60, by - 20, 120, 40, 0x0f172a).setOrigin(0).setStrokeStyle(1, 0x4da6ff);
       const holo = this.add.circle(bx, by - 20, 15, 0x4da6ff, 0.3);
       this.tweens.add({ targets: holo, alpha: 0.8, scale: 1.2, yoyo: true, repeat: -1, duration: 1500 });
