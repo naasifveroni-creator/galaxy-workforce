@@ -21,7 +21,7 @@ body {
   overflow: hidden;
 }
 
-/* THE 3D CANVAS TAKES UP THE ENTIRE SCREEN */
+/* 3D CANVAS */
 .canvas-container {
   width: 100vw;
   height: 100vh;
@@ -42,7 +42,7 @@ body {
   z-index: 10;
 }
 
-/* THE HUD IS FIXED TO THE RIGHT AND CANNOT BE PUSHED OFF */
+/* THE HUD PANEL */
 .hud-panel {
   position: fixed;
   top: 0;
@@ -54,15 +54,40 @@ body {
   z-index: 100;
   box-shadow: -10px 0 30px rgba(0, 0, 0, 0.8);
   transition: transform 0.3s ease;
-  overflow: hidden;
+  /* REMOVED overflow: hidden so the button can stick out */
 }
 
-/* WHEN COLLAPSED, SLIDE IT OFF THE SCREEN */
 .hud-panel.collapsed {
   transform: translateX(100%);
 }
 
-/* CONTENT INSIDE THE PANEL */
+/* THE TOGGLE BUTTON - OUTSIDE THE PANEL */
+.hud-toggle-btn {
+  position: absolute;
+  top: 50%;
+  left: -30px;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 60px;
+  background: #060a12;
+  border: 2px solid #00f0ff;
+  border-right: none;
+  color: #00f0ff;
+  font-size: 14px;
+  cursor: pointer;
+  z-index: 200;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.2s;
+}
+.hud-toggle-btn:hover {
+  background: #00f0ff;
+  color: #000;
+  box-shadow: 0 0 15px #00f0ff;
+}
+
+/* CONTENT INSIDE */
 .hud-content {
   display: flex;
   flex-direction: column;
@@ -100,27 +125,6 @@ body {
   font-size: 9px;
   font-weight: bold;
   font-family: 'Share Tech Mono', monospace;
-}
-
-/* THE TOGGLE BUTTON */
-.hud-toggle-btn {
-  background: transparent;
-  border: 1px solid #00f0ff;
-  color: #00f0ff;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-  padding: 2px 6px;
-  line-height: 1;
-  transition: all 0.2s;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-.hud-toggle-btn:hover {
-  background: #00f0ff;
-  color: #000;
-  box-shadow: 0 0 10px #00f0ff;
 }
 
 .profile-card {
@@ -274,6 +278,7 @@ h4 {
 .approve { background: rgba(46, 204, 113, 0.1); border: 1px solid #2ecc71; color: #2ecc71; }
 .reject { background: rgba(231, 76, 60, 0.1); border: 1px solid #e74c3c; color: #e74c3c; }
 
+/* MINIMAP & MODAL */
 .minimap-container { position: absolute; bottom: 20px; left: 20px; background: rgba(2, 4, 10, 0.85); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 8px; z-index: 50; }
 .minimap-container.expanded { width: 180px; height: 200px; padding: 10px; }
 .minimap-container.minimized { width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center; }
