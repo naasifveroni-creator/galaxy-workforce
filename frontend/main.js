@@ -123,7 +123,6 @@ function applyBotStatus(msg, instant = false) {
   }
 }
 
-// ---------- Phaser ----------
 new Phaser.Game({
   type: Phaser.AUTO,
   parent: "game",
@@ -132,11 +131,8 @@ new Phaser.Game({
   scene: {
     preload() {
       this.load.spritesheet('commander', 'https://labs.phaser.io/assets/sprites/dude.png', { frameWidth: 32, frameHeight: 48 });
-      
-      // BASE64 TEXTURE: A dark sci-fi grid floor
-      // This is embedded directly in the code so it NEVER fails to load
-      const gridTexture = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAFUlEQVR42mNkYPhfz0AEYBxVSF+FAP5FDvcfRYWgAAAAAElFTkSuQmCC';
-      this.load.image('grid', gridTexture);
+      // High-quality sci-fi floor texture from a reliable CDN
+      this.load.image('sci-fi-floor', 'https://labs.phaser.io/assets/textures/3d.png');
     },
     create() {
       scene = this;
@@ -148,55 +144,84 @@ new Phaser.Game({
         stars.fillCircle(Math.random() * 960, Math.random() * 640, Math.random() * 1.5);
       }
 
-      // 2. Draw All Rooms with Textures and Neon
+      // 2. Ship Corridor
+      this.add.rectangle(0, 0, 12 * TILE, 8 * TILE, 0x0a0a14).setOrigin(0).setAlpha(0.8);
+
+      // 3. Build Detailed Rooms
       Object.entries(ROOMS).forEach(([key, r]) => {
         const x = r.col * TILE;
         const y = r.row * TILE;
         const w = r.w * TILE;
         const h = r.h * TILE;
 
-        // Deep Shadow
-        this.add.rectangle(x + 10, y + 10, w, h, 0x000000, 0.9).setOrigin(0);
+        // Deep Drop Shadow (3D effect)
+        this.add.rectangle(x + 15, y + 15, w, h, 0x000000, 0.9).setOrigin(0);
         
-        // Base Floor Color
-        this.add.rectangle(x, y, w, h, r.color).setOrigin(0);
+        // Base Color
+        this.add.rectangle(x, y, w, h, r.color, 0.95).setOrigin(0);
         
         // Tiled Texture Overlay
-        this.add.tileSprite(x, y, w, h, 'grid').setOrigin(0).setAlpha(0.3).setTint(0xaaaaaa);
+        this.add.tileSprite(x, y, w, h, 'sci-fi-floor').setOrigin(0).setAlpha(0.2).setTint(0xffffff);
         
-        // Glowing Wall (Neon Border)
-        const neonColor = r.color + 0x333333; 
-        this.add.rectangle(x, y, w, h).setOrigin(0).setStrokeStyle(3, neonColor);
+        // Neon Border
+        const neonColor = r.color + 0x444444; // Brighten
+        this.add.rectangle(x, y, w, h).setOrigin(0).setStrokeStyle(4, neonColor);
         
-        // Inner Dark Wall (gives thickness)
-        this.add.rectangle(x + 6, y + 6, w - 12, h - 12).setOrigin(0).setStrokeStyle(1, 0x000000, 0.5);
+        // Inner Shadow (gives wall thickness)
+        this.add.rectangle(x + 6, y + 6, w - 12, h - 12).setOrigin(0).setStrokeStyle(2, 0x000000, 0.6);
         
-        // Room Label with Background
+        // Room Label
         this.add.text(x + 15, y + 15, r.label, { 
           fontSize: "12px", color: "#fff", fontWeight: "bold", 
-          stroke: "#000", strokeThickness: 3, backgroundColor: "rgba(0,0,0,0.6)", padding: { x: 6, y: 4 } 
+          stroke: "#000", strokeThickness: 3, backgroundColor: "rgba(0,0,0,0.7)", padding: { x: 6, y: 4 } 
         }).setDepth(5);
       });
 
-      // --- Room Specific Machinery ---
+      // 4. Add Machinery
       
       // Bridge: Command Table
       const bx = ROOMS['bridge'].col * TILE + (ROOMS['bridge'].w * TILE / 2);
       const by = ROOMS['bridge'].row * TILE + (ROOMS['bridge'].h * TILE / 2);
-      this.add.rectangle(bx - 60, by - 20, 120, 40, 0x0f172a).setOrigin(0).setStrokeStyle(1, 0x4da6ff);
-      const holo = this.add.circle(bx, by - 20, 15, 0x4da6ff, 0.3);
+      this.add.rectangle(bx - 70, by - 20, 140, 50, 0x1e293b).setOrigin(0).setStrokeStyle(2, 0x4da6ff);
+      const holo = this.add.circle(bx, by - 20, 20, 0x4da6ff, 0.3);
       this.tweens.add({ targets: holo, alpha: 0.8, scale: 1.2, yoyo: true, repeat: -1, duration: 1500 });
 
-      // Office: Desk
-      const ox = ROOMS['office'].col * TILE + 40;
-      const oy = ROOMS['office'].row * TILE + 40;
-      this.add.rectangle(ox, oy, 160, 60, 0x2c1e38).setOrigin(0).setStrokeStyle(2, 0x9b59b6);
-      this.add.rectangle(ox + 10, oy + 10, 140, 40, 0x1a1122).setOrigin(0);
+      // Comms Array: Server Racks
+      const comms = ROOMS['comms_array'];
+      const cx = comms.col * TILE + 20;
+      const cy = comms.row * TILE + 40;
+      for(let i=0; i<3; i++) {
+        this.add.rectangle(cx + (i*50), cy, 40, 100, 0x1c0c0c).setOrigin(0).setStrokeStyle(2, 0x7b241c);
+        for(let j=0; j<4; j++) {
+          const light = this.add.circle(cx + 20 + (i*50), cy + 15 + (j*20), 3, 0xff4d4d);
+          this.tweens.add({ targets: light, alpha: 0.2, yoyo: true, repeat: -1, duration: 300 + Math.random() * 500 });
+        }
+      }
 
-      // 3. Add the Commander Avatar (Spawn in Office)
-      const officeCenterX = (ROOMS['office'].col + ROOMS['office'].w / 2) * TILE;
-      const officeCenterY = (ROOMS['office'].row + ROOMS['office'].h / 2) * TILE;
-      
+      // Data Forge: Rotating Rings
+      const data = ROOMS['data_forge'];
+      const dx = data.col * TILE + (data.w * TILE / 2);
+      const dy = data.row * TILE + (data.h * TILE / 2);
+      const ring1 = this.add.circle(dx, dy, 40, 0x000000, 0).setStrokeStyle(2, 0x4da6ff, 0.8);
+      this.tweens.add({ targets: ring1, angle: 360, repeat: -1, duration: 4000 });
+      const ring2 = this.add.circle(dx, dy, 60, 0x000000, 0).setStrokeStyle(2, 0x4da6ff, 0.4);
+      this.tweens.add({ targets: ring2, angle: -360, repeat: -1, duration: 6000 });
+
+      // Strategy Deck: War Table
+      const strat = ROOMS['strategy_deck'];
+      const sx = strat.col * TILE + (strat.w * TILE / 2);
+      const sy = strat.row * TILE + (strat.h * TILE / 2);
+      this.add.ellipse(sx, sy, 140, 80, 0x0f2410).setStrokeStyle(3, 0x2ecc71);
+
+      // Office: Desk
+      const office = ROOMS['office'];
+      const ox = office.col * TILE + 40;
+      const oy = office.row * TILE + 40;
+      this.add.rectangle(ox, oy, 160, 60, 0x2c1e38).setOrigin(0).setStrokeStyle(2, 0x9b59b6);
+
+      // 5. Commander Avatar
+      const officeCenterX = (office.col + office.w / 2) * TILE;
+      const officeCenterY = (office.row + office.h / 2) * TILE;
       this.commander = this.add.sprite(officeCenterX, officeCenterY + 20, 'commander', 4).setDepth(20).setScale(1.2);
       
       this.commanderLabel = this.add.text(officeCenterX, officeCenterY - 20, "COMMANDER", { 
@@ -207,7 +232,7 @@ new Phaser.Game({
       this.anims.create({ key: 'turn', frames: [ { key: 'commander', frame: 4 } ], frameRate: 20 });
       this.anims.create({ key: 'right', frames: this.anims.generateFrameNumbers('commander', { start: 5, end: 8 }), frameRate: 10, repeat: -1 });
 
-      // 4. Commander Scanner Ability
+      // 6. Scanner Ability
       this.scanner = this.add.circle(officeCenterX, officeCenterY, 10, 0x4da6ff, 0.5).setDepth(15);
       this.scanner.setVisible(false);
       this.scanTween = null;
@@ -223,7 +248,7 @@ new Phaser.Game({
         });
       });
 
-      // 5. Keyboard Controls
+      // 7. Keyboard Controls
       this.cursors = this.input.keyboard.createCursorKeys();
       this.wasd = this.input.keyboard.addKeys('W,A,S,D');
 
