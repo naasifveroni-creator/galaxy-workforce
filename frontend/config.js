@@ -10,5 +10,10 @@ const ROOMS = {
   strategy_deck: { label: "Strategy Deck",  col: 0, row: 5, w: 4, h: 3, color: 0x1d6a39 },
 };
 
-// Slight x-offset per bot so two bots in one room don't stack perfectly.
-const BOT_OFFSETS = { email_bot: [-20, 0], data_bot: [0, 0], excel_bot: [-20, 0], report_bot: [20, 0] };
+// Spread them out! 40 pixels apart in the X axis.
+const BOT_OFFSETS = { 
+  email_bot: [-60, 0], 
+  data_bot: [-20, 0], 
+  excel_bot: [20, 0], 
+  report_bot: [60, 0] 
+};
