@@ -5,29 +5,122 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Galaxy Workforce</title>
     <style>
-        body { margin: 0; padding: 0; background: #05050a; color: #fff; display: flex; height: 100vh; font-family: 'Courier New', Courier, monospace; overflow: hidden; }
-        #game-container { flex: 1; display: flex; justify-content: center; align-items: center; }
-        #hud { width: 320px; background: #0d111a; border-left: 2px solid #1a2035; padding: 20px; display: flex; flex-direction: column; gap: 20px; box-shadow: -5px 0 15px rgba(0,0,0,0.5); z-index: 10; }
-        h2, h3 { margin: 0 0 10px 0; font-size: 16px; color: #4da6ff; text-transform: uppercase; }
-        button { background: #131b2e; color: #a9b7d0; border: 1px solid #2a3b5c; padding: 12px; border-radius: 4px; cursor: pointer; text-align: left; transition: all 0.2s; font-family: 'Courier New', Courier, monospace; font-weight: bold; }
-        button:hover { background: #1c2942; border-color: #4da6ff; color: #fff; }
-        .action-btn { padding: 8px; border-radius: 3px; cursor: pointer; font-weight: bold; border: none; color: white; }
+        body { 
+            margin: 0; padding: 0; background: #05050a; color: #fff; 
+            display: flex; height: 100vh; font-family: 'Courier New', Courier, monospace; overflow: hidden;
+        }
+        
+        #game-view { flex: 1; display: flex; justify-content: center; align-items: center; background: radial-gradient(circle, #111 0%, #000 100%); }
+        
+        #map {
+            position: relative; width: 800px; height: 600px; border: 1px solid #333;
+            background: url('https://www.transparenttextures.com/patterns/stardust.png');
+            /* Add a subtle grid to the map */
+            background-image: linear-gradient(#1a1a1a 1px, transparent 1px), linear-gradient(90deg, #1a1a1a 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        .room { 
+            position: absolute; border: 1px solid #555; padding: 10px; font-size: 12px; 
+            text-transform: uppercase; letter-spacing: 1px; font-weight: bold;
+            background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(2px);
+        }
+
+        #hud { 
+            width: 350px; background: #0d111a; border-left: 2px solid #1a2035; 
+            padding: 20px; display: flex; flex-direction: column; gap: 20px; 
+            box-shadow: -5px 0 15px rgba(0,0,0,0.5); z-index: 10;
+        }
+
+        h2, h3 { margin: 0 0 10px 0; font-size: 14px; color: #4da6ff; text-transform: uppercase; letter-spacing: 2px; }
+
+        button { 
+            background: #131b2e; color: #a9b7d0; border: 1px solid #2a3b5c; 
+            padding: 12px; border-radius: 4px; cursor: pointer; text-align: left; 
+            transition: all 0.2s; font-family: 'Courier New', Courier, monospace; font-weight: bold;
+        }
+        button:hover { background: #1c2942; border-color: #4da6ff; color: #fff; box-shadow: 0 0 10px rgba(77, 166, 255, 0.2); }
+        
+        .action-btn { padding: 8px; border-radius: 3px; cursor: pointer; font-weight: bold; border: none; color: white; width: 100%; }
         .approve { background: #2ecc71; }
+        .approve:hover { background: #27ae60; box-shadow: 0 0 10px rgba(46, 204, 113, 0.4); }
         .reject { background: #e74c3c; }
-        .approval-card { background: #151a22; border: 1px solid #f1c40f; padding: 15px; border-radius: 4px; margin-bottom: 10px; font-size: 12px; }
+        .reject:hover { background: #c0392b; }
+
+        .approval-card { 
+            background: #151a22; border: 1px solid #f1c40f; padding: 15px; 
+            border-radius: 4px; margin-bottom: 10px; font-size: 11px; 
+            box-shadow: 0 0 15px rgba(241, 196, 15, 0.15);
+        }
+
+        /* --- THE BOT UPGRADE --- */
+        .bot-container {
+            position: absolute; width: 40px; height: 40px; 
+            transition: left 2s ease-in-out, top 2s ease-in-out;
+            z-index: 5; display: flex; justify-content: center; align-items: center;
+        }
+
+        .bot-body { 
+            width: 32px; height: 32px; border-radius: 50%; 
+            position: relative; display: flex; justify-content: center; align-items: center;
+            /* Visor effect */
+            background: radial-gradient(circle at 30% 30%, #fff, transparent 40%), var(--bot-color);
+            box-shadow: 0 0 15px var(--bot-color), inset -5px -5px 15px rgba(0,0,0,0.5);
+            border: 2px solid rgba(255, 255, 255, 0.8);
+        }
+
+        /* Walking bob animation */
+        .bot-container.walking .bot-body {
+            animation: bob 0.3s infinite alternate;
+        }
+
+        /* Working pulse animation */
+        .bot-container.working .bot-body {
+            animation: pulse 1s infinite alternate;
+        }
+
+        @keyframes bob {
+            from { transform: translateY(0px) scale(1); }
+            to { transform: translateY(-8px) scale(1.05); }
+        }
+
+        @keyframes pulse {
+            from { box-shadow: 0 0 10px var(--bot-color), inset -5px -5px 15px rgba(0,0,0,0.5); transform: scale(1); }
+            to { box-shadow: 0 0 30px var(--bot-color), inset -5px -5px 15px rgba(0,0,0,0.5); transform: scale(1.1); }
+        }
+
+        .bot-label { 
+            position: absolute; top: -25px; white-space: nowrap; color: #fff; 
+            font-size: 10px; font-weight: bold; text-shadow: 1px 1px 3px black, 0 0 5px black;
+        }
+        
+        .bot-status {
+            position: absolute; bottom: -20px; white-space: nowrap; color: #a9b7d0;
+            font-size: 9px; text-transform: uppercase; letter-spacing: 1px;
+        }
     </style>
-    <!-- Load Phaser from CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
 </head>
 <body>
 
-    <div id="game-container"></div>
+    <!-- The Galaxy Map -->
+    <div id="game-view">
+        <div id="map">
+            <!-- Rooms -->
+            <div class="room" style="top: 0; left: 0; width: 300px; height: 200px; background: rgba(69, 26, 26, 0.5);">Comms Array</div>
+            <div class="room" style="top: 0; right: 0; width: 300px; height: 200px; background: rgba(15, 58, 77, 0.5);">Data Forge</div>
+            <div class="room" style="bottom: 0; left: 0; width: 300px; height: 200px; background: rgba(26, 61, 26, 0.5);">Strategy Deck</div>
+            <div class="room" style="bottom: 50px; left: 250px; width: 300px; height: 150px; background: rgba(30, 41, 59, 0.8); border-color: #4da6ff;">Bridge (HQ)</div>
+            <!-- Bots will spawn here -->
+        </div>
+    </div>
 
+    <!-- The HUD -->
     <div id="hud">
         <div>
             <h2>Commander HUD</h2>
             <div id="connection-status" style="font-size: 12px; color: #f1c40f;">connecting...</div>
         </div>
+
         <div>
             <h3>Dispatch</h3>
             <div style="display: flex; flex-direction: column; gap: 10px;">
@@ -37,59 +130,26 @@
                 <button onclick="sendDispatch('report_bot')">▶ Run ReportBot</button>
             </div>
         </div>
+
         <div style="flex: 1; overflow-y: auto;">
             <h3>Approvals</h3>
             <div id="approval-container" style="display: flex; flex-direction: column; gap: 10px;"></div>
         </div>
     </div>
 
-    <!-- EVERYTHING IS DEFINED RIGHT HERE -->
     <script>
-       const WS_URL = "wss://orange-system-g4w4gq7r9gxxcw7q-8000.app.github.dev/ws";
+        // REPLACE THIS URL WITH YOUR ACTUAL CODESPACE URL IF NEEDED
+        const WS_URL = "wss://orange-system-g4w4gq7r9gxxcw7q-8000.app.github.dev/ws";
         let ws;
-        let gameScene;
-        let bots = {};
+        let bots = {}; 
 
-        const TILE = 80;
+        // Coordinates based on the center of each room box
         const ROOMS = {
-            bridge:        { label: "Bridge (HQ)",     col: 5, row: 4, w: 3, h: 2, color: 0x1e293b },
-            comms_array:   { label: "Comms Array",     col: 0, row: 0, w: 4, h: 3, color: 0x451a1a },
-            data_forge:    { label: "Data Forge",      col: 8, row: 0, w: 4, h: 3, color: 0x0f3a4d },
-            strategy_deck: { label: "Strategy Deck",   col: 0, row: 5, w: 4, h: 3, color: 0x1a3d1a }
+            bridge: { x: 400, y: 475 },
+            comms_array: { x: 150, y: 100 },
+            data_forge: { x: 650, y: 100 },
+            strategy_deck: { x: 150, y: 500 }
         };
-        const BOT_OFFSETS = { email_bot: [-40, 0], data_bot: [-10, 0], excel_bot: [20, 0], report_bot: [50, 0] };
-
-        function create() {
-            gameScene = this;
-
-            // Draw Grid
-            const graphics = this.add.graphics();
-            graphics.lineStyle(1, 0x333333, 1);
-            for (let x = 0; x <= 1200; x += TILE) graphics.lineBetween(x, 0, x, 800);
-            for (let y = 0; y <= 800; y += TILE) graphics.lineBetween(0, y, 1200, y);
-
-            // Draw Rooms
-            for (const [key, room] of Object.entries(ROOMS)) {
-                const x = room.col * TILE;
-                const y = room.row * TILE;
-                const w = room.w * TILE;
-                const h = room.h * TILE;
-                this.add.rectangle(x, y, w, h, room.color, 0.6).setOrigin(0, 0).setStrokeStyle(2, 0x555555);
-                this.add.text(x + 10, y + 10, room.label, { fontFamily: 'monospace', fontSize: '14px', color: '#ffffff' });
-            }
-
-            connectWebSocket.call(this);
-        }
-
-        const config = {
-            type: Phaser.AUTO,
-            width: 1100,
-            height: 700,
-            parent: 'game-container',
-            backgroundColor: '#0a0a0a',
-            scene: { create: create }
-        };
-        new Phaser.Game(config);
 
         function connectWebSocket() {
             ws = new WebSocket(WS_URL);
@@ -107,82 +167,82 @@
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
                 if (data.type === 'SNAPSHOT') {
-                    data.bots.forEach(botData => applyBotStatus.call(this, botData));
+                    data.bots.forEach(botData => updateBot(botData));
                 } else if (data.type === 'BOT_STATUS') {
-                    applyBotStatus.call(this, data);
+                    updateBot(data);
                 } else if (data.type === 'APPROVAL_REQUEST') {
                     showApprovalCard(data);
                 }
             };
         }
 
-        function applyBotStatus(data) {
-            let bot = bots[data.bot_id];
-            const targetRoom = ROOMS[data.location] || ROOMS['bridge'];
-            const offset = BOT_OFFSETS[data.bot_id] || [0, 0];
-
-            const targetX = (targetRoom.col * TILE) + (targetRoom.w * TILE / 2) + offset[0];
-            const targetY = (targetRoom.row * TILE) + (targetRoom.h * TILE / 2) + offset[1];
-
-            if (!bot) {
-                const circle = this.add.circle(targetX, targetY, 15, data.color).setStrokeStyle(2, 0xffffff);
-                const label = this.add.text(targetX, targetY - 25, data.name, { fontFamily: 'monospace', fontSize: '12px', color: '#ffffff' }).setOrigin(0.5);
-                const statusLabel = this.add.text(targetX, targetY + 25, data.status.replace('_', ' '), { fontFamily: 'monospace', fontSize: '10px', color: '#aaaaaa' }).setOrigin(0.5);
-                bot = { sprite: circle, label: label, statusLabel: statusLabel };
-                bots[data.bot_id] = bot;
+        function updateBot(data) {
+            let botEl = bots[data.bot_id];
+            
+            // 1. Create the bot DOM elements if they don't exist yet
+            if (!botEl) {
+                botEl = document.createElement('div');
+                botEl.className = 'bot-container';
+                botEl.style.setProperty('--bot-color', data.color);
+                
+                botEl.innerHTML = `
+                    <div class="bot-label">${data.name}</div>
+                    <div class="bot-body"></div>
+                    <div class="bot-status">${data.status}</div>
+                `;
+                
+                // Start them slightly offset in the bridge so they aren't stacked
+                const offset = data.bot_id === 'email_bot' ? -60 : data.bot_id === 'data_bot' ? -20 : data.bot_id === 'excel_bot' ? 20 : 60;
+                botEl.style.left = (ROOMS.bridge.x + offset) + 'px';
+                botEl.style.top = ROOMS.bridge.y + 'px';
+                
+                document.getElementById('map').appendChild(botEl);
+                bots[data.bot_id] = botEl;
             }
 
-            bot.statusLabel.setText(data.status.replace('_', ' '));
+            // 2. Update the text status
+            botEl.querySelector('.bot-status').innerText = data.status.replace('_', ' ');
 
-            const currentTargetX = bot.sprite.getData('targetX');
-            const currentTargetY = bot.sprite.getData('targetY');
-
-            if (currentTargetX !== targetX || currentTargetY !== targetY) {
-                bot.sprite.setData('targetX', targetX);
-                bot.sprite.setData('targetY', targetY);
-                this.tweens.killTweensOf([bot.sprite, bot.label, bot.statusLabel]);
-                this.tweens.add({
-                    targets: [bot.sprite, bot.label, bot.statusLabel],
-                    x: targetX,
-                    y: (target) => {
-                        if (target === bot.label) return targetY - 25;
-                        if (target === bot.statusLabel) return targetY + 25;
-                        return targetY;
-                    },
-                    duration: 2000,
-                    ease: 'Linear'
-                });
+            // 3. Manage Animations
+            botEl.classList.remove('walking', 'working');
+            if (data.status === 'walking') {
+                botEl.classList.add('walking');
+            } else if (data.status === 'working' || data.status === 'awaiting_approval') {
+                botEl.classList.add('working');
             }
 
-            if (data.status === 'working' || data.status === 'waiting_approval' || data.status === 'executing') {
-                if (!bot.pulseTween) {
-                    bot.pulseTween = this.tweens.add({ targets: bot.sprite, scale: 1.3, duration: 500, yoyo: true, repeat: -1 });
-                }
-            } else {
-                if (bot.pulseTween) {
-                    bot.pulseTween.stop();
-                    bot.pulseTween = null;
-                    bot.sprite.setScale(1);
-                }
-            }
+            // 4. Move the bot
+            const room = ROOMS[data.location] || ROOMS.bridge;
+            const offset = data.bot_id === 'email_bot' ? -60 : data.bot_id === 'data_bot' ? -20 : data.bot_id === 'excel_bot' ? 20 : 60;
+            
+            botEl.style.left = (room.x + offset) + 'px';
+            botEl.style.top = room.y + 'px';
         }
 
         function showApprovalCard(data) {
             const container = document.getElementById('approval-container');
-            let previewText = data.preview ? JSON.stringify(data.preview, null, 2) : "";
             const card = document.createElement('div');
             card.className = 'approval-card';
             card.id = `card-${data.bot_id}`;
+            
+            let preview = data.preview ? JSON.stringify(data.preview, null, 2) : "No preview data.";
+            
             card.innerHTML = `
-                <div style="font-weight: bold; margin-bottom: 5px; color: #4da6ff;">${data.bot_id}</div>
-                <div style="margin-bottom: 10px;">${data.summary}</div>
-                <pre style="background: #000; padding: 10px; border-radius: 4px; font-size: 10px; max-height: 150px; overflow-y: auto;">${previewText}</pre>
-                <div style="display: flex; gap: 10px; margin-top: 10px;">
-                    <button onclick="sendApproval('${data.bot_id}', true)" class="action-btn approve" style="flex: 1;">APPROVE</button>
-                    <button onclick="sendApproval('${data.bot_id}', false)" class="action-btn reject" style="flex: 1;">REJECT</button>
+                <div style="font-weight:bold; color:#4da6ff; margin-bottom:5px;">${data.bot_id}</div>
+                <div style="margin-bottom:10px;">${data.summary}</div>
+                <pre style="background:#000; padding:5px; font-size:10px; max-height:100px; overflow-y:auto; color:#0f0; white-space: pre-wrap;">${preview}</pre>
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <button class="action-btn approve" onclick="sendApproval('${data.bot_id}', true)">APPROVE</button>
+                    <button class="action-btn reject" onclick="sendApproval('${data.bot_id}', false)">REJECT</button>
                 </div>
             `;
             container.appendChild(card);
+        }
+
+        function sendDispatch(botId) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'DISPATCH', bot_id: botId }));
+            }
         }
 
         function sendApproval(botId, isApproved) {
@@ -193,11 +253,7 @@
             }
         }
 
-        function sendDispatch(botId) {
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({ type: 'DISPATCH', bot_id: botId }));
-            }
-        }
+        connectWebSocket();
     </script>
 </body>
 </html>

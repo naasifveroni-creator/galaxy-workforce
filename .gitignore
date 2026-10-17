@@ -4,3 +4,4 @@ __pycache__/
 backend/output/*
 !backend/output/.gitkeep
 node_modules/
+backend/data/
