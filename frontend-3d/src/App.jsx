@@ -317,44 +317,33 @@ const MovingBot = ({ bot }) => {
   );
 };
 
-// --- THE COMMANDER (NEW ABILITIES) ---
+// --- THE COMMANDER (GOD TIER UPGRADE) ---
 const Commander = ({ activeRoom, setActiveRoom, isPaused, commanderPos }) => {
   const ref = useRef();
+  const platformRef = useRef();
+  const droneRef = useRef();
   const keys = useRef({});
   const scanRef = useRef();
   const scanTime = useRef(0);
-  
-  // New: Command Aura
-  const auraRef = useRef();
-  // New: Move Target
-  const targetPos = useRef(null);
-  // New: Alert Ping
   const pingRef = useRef();
   const pingTime = useRef(0);
+  const targetPos = useRef(null);
 
-  // New: Click-to-move listener
   const { camera, gl } = useThree();
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
 
   useEffect(() => {
     const handleClick = (event) => {
-      // Calculate mouse position in normalized device coordinates (-1 to +1)
       mouse.x = (event.clientX / gl.domElement.clientWidth) * 2 - 1;
       mouse.y = -(event.clientY / gl.domElement.clientHeight) * 2 + 1;
-
       raycaster.setFromCamera(mouse, camera);
-      
-      // Create a mathematical plane at Y=0 to intersect with
       const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
       const intersection = new THREE.Vector3();
-      
       if (raycaster.ray.intersectPlane(plane, intersection)) {
-        // Move the commander to the clicked position
         targetPos.current = new THREE.Vector3(intersection.x, 0.6, intersection.z);
       }
     };
-
     gl.domElement.addEventListener('click', handleClick);
     return () => gl.domElement.removeEventListener('click', handleClick);
   }, [camera, gl]);
@@ -362,8 +351,6 @@ const Commander = ({ activeRoom, setActiveRoom, isPaused, commanderPos }) => {
   useEffect(() => {
     const down = (e) => {
       keys.current[e.key.toLowerCase()] = true;
-      
-      // SPACEBAR SCAN ABILITY
       if (e.code === 'Space') {
         if (scanRef.current && scanTime.current <= 0) {
           scanTime.current = 1.5;
@@ -373,8 +360,6 @@ const Commander = ({ activeRoom, setActiveRoom, isPaused, commanderPos }) => {
           scanRef.current.material.opacity = 1;
         }
       }
-
-      // NEW: Q ALERT PING
       if (e.key.toLowerCase() === 'q') {
         if (pingRef.current && pingTime.current <= 0) {
           pingTime.current = 1.0;
@@ -394,31 +379,26 @@ const Commander = ({ activeRoom, setActiveRoom, isPaused, commanderPos }) => {
   useFrame((state, delta) => {
     if (!ref.current || isPaused) return;
     
-    // NEW: SHIFT OVERCLOCK
     const isBoosting = keys.current['shift'];
     const speed = (isBoosting ? 10 : 5) * delta;
 
-    // Keyboard Movement (Overrides click-to-move)
     let isMoving = false;
     if (keys.current['w'] || keys.current['arrowup']) { ref.current.position.z -= speed; isMoving = true; }
     if (keys.current['s'] || keys.current['arrowdown']) { ref.current.position.z += speed; isMoving = true; }
     if (keys.current['a'] || keys.current['arrowleft']) { ref.current.position.x -= speed; isMoving = true; }
     if (keys.current['d'] || keys.current['arrowright']) { ref.current.position.x += speed; isMoving = true; }
 
-    // Click-to-Move logic
     if (!isMoving && targetPos.current) {
       const dist = ref.current.position.distanceTo(targetPos.current);
       if (dist > 0.1) {
         ref.current.position.lerp(targetPos.current, 5 * delta);
       } else {
-        targetPos.current = null; // Stop when close
+        targetPos.current = null;
       }
     }
 
-    // Update position for Minimap
     commanderPos.current = { x: ref.current.position.x, z: ref.current.position.z };
 
-    // Proximity detection
     let closestRoom = null;
     let minDist = 4;
     Object.entries(ROOM_POSITIONS).forEach(([id, pos]) => {
@@ -429,14 +409,23 @@ const Commander = ({ activeRoom, setActiveRoom, isPaused, commanderPos }) => {
     });
     if (closestRoom !== activeRoom) setActiveRoom(closestRoom);
 
-    // NEW: Command Aura Animation
-    if (auraRef.current) {
-      auraRef.current.rotation.z += delta;
-      const scale = 1 + Math.sin(state.clock.elapsedTime * 3) * 0.1;
-      auraRef.current.scale.set(scale, scale, 1);
+    // Holographic Platform Rotation
+    if (platformRef.current) {
+      platformRef.current.rotation.z -= delta * 0.5;
+      platformRef.current.position.set(ref.current.position.x, 0.1, ref.current.position.z);
     }
 
-    // Scan Ability Animation
+    // Drone Orbit
+    if (droneRef.current) {
+      const time = state.clock.elapsedTime;
+      droneRef.current.position.set(
+        ref.current.position.x + Math.cos(time * 2) * 1.2,
+        1.2 + Math.sin(time * 3) * 0.2,
+        ref.current.position.z + Math.sin(time * 2) * 1.2
+      );
+      droneRef.current.rotation.y = time * 2;
+    }
+
     if (scanTime.current > 0) {
       scanTime.current -= delta;
       if (scanRef.current) {
@@ -447,7 +436,6 @@ const Commander = ({ activeRoom, setActiveRoom, isPaused, commanderPos }) => {
       }
     }
 
-    // NEW: Ping Ability Animation
     if (pingTime.current > 0) {
       pingTime.current -= delta;
       if (pingRef.current) {
@@ -460,26 +448,32 @@ const Commander = ({ activeRoom, setActiveRoom, isPaused, commanderPos }) => {
   });
 
   return (
-    <group ref={ref} position={[8, 0.6, 8]}>
-      <Crewmate3D color="#f1c40f" name="COMMANDER" isCommander={true} />
-      <pointLight color="#f1c40f" intensity={2} distance={4} position={[0, 0.5, 0]} />
+    <>
+      {/* Holographic Platform (Separate so it can be updated independently) */}
+      <mesh ref={platformRef} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.8, 1.0, 6]} />
+        <meshBasicMaterial color="#f1c40f" transparent opacity={0.6} side={THREE.DoubleSide} />
+      </mesh>
       
-      {/* NEW: Permanent Command Aura */}
-      <mesh ref={auraRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.65, 0]}>
-        <ringGeometry args={[0.6, 0.7, 32]} />
-        <meshBasicMaterial color="#f1c40f" transparent opacity={0.5} side={THREE.DoubleSide} />
+      {/* Drone Companion */}
+      <mesh ref={droneRef}>
+        <sphereGeometry args={[0.1, 8, 8]} />
+        <meshStandardMaterial color="#00f0ff" emissive="#00f0ff" emissiveIntensity={2} />
       </mesh>
+      
+      <group ref={ref} position={[8, 0.6, 8]}>
+        <Crewmate3D color="#f1c40f" name="COMMANDER" isCommander={true} />
+        <pointLight color="#f1c40f" intensity={2} distance={4} position={[0, 0.5, 0]} />
+        
+        <mesh ref={scanRef} rotation={[-Math.PI / 2, 0, 0]} visible={false} position={[0, 0, 0]}>
+          <ringGeometry args={[0.8, 1, 32]} /><meshBasicMaterial color="#00f0ff" transparent opacity={1} side={THREE.DoubleSide} />
+        </mesh>
 
-      {/* Scan Ring */}
-      <mesh ref={scanRef} rotation={[-Math.PI / 2, 0, 0]} visible={false} position={[0, 0, 0]}>
-        <ringGeometry args={[0.8, 1, 32]} /><meshBasicMaterial color="#00f0ff" transparent opacity={1} side={THREE.DoubleSide} />
-      </mesh>
-
-      {/* NEW: Alert Ping Ring */}
-      <mesh ref={pingRef} rotation={[-Math.PI / 2, 0, 0]} visible={false} position={[0, 0, 0]}>
-        <ringGeometry args={[0.8, 1, 32]} /><meshBasicMaterial color="#e74c3c" transparent opacity={1} side={THREE.DoubleSide} />
-      </mesh>
-    </group>
+        <mesh ref={pingRef} rotation={[-Math.PI / 2, 0, 0]} visible={false} position={[0, 0, 0]}>
+          <ringGeometry args={[0.8, 1, 32]} /><meshBasicMaterial color="#e74c3c" transparent opacity={1} side={THREE.DoubleSide} />
+        </mesh>
+      </group>
+    </>
   );
 };
 
@@ -644,7 +638,6 @@ export default function App() {
             </div>
           </div>
           
-          {/* COMMANDER CONTROLS */}
           <div>
             <h4>Commander Controls</h4>
             <div className="button-group" style={{ fontSize: '10px', color: '#8892b0', lineHeight: '1.6' }}>
