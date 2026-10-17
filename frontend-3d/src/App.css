@@ -153,6 +153,7 @@ button:hover {
   justify-content: center;
 }
 .reject:hover { background: rgba(231, 76, 60, 0.3); box-shadow: 0 0 15px rgba(231, 76, 60, 0.4); transform: none; }
+
 /* --- ROOM INTERACTION MODAL --- */
 .room-modal-overlay {
   position: fixed;
@@ -172,14 +173,13 @@ button:hover {
   padding: 40px;
   width: 600px;
   max-width: 90%;
-  max-height: 90vh; /* Prevents vertical clipping */
-  overflow-y: auto; /* Adds scroll if too small */
+  max-height: 90vh;
+  overflow-y: auto;
   color: #fff;
   font-family: 'Rajdhani', sans-serif;
   box-shadow: 0 0 50px rgba(0, 240, 255, 0.2);
   position: relative;
-  transform: translateY(0); /* Ensures it is centered */
-}
+  transform: translateY(0);
 }
 
 .room-modal h2 {
