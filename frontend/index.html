@@ -5,24 +5,95 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Galaxy Workforce</title>
     <style>
-        body { margin: 0; padding: 0; background: #05050a; color: #fff; display: flex; height: 100vh; overflow: hidden; font-family: monospace; }
-        #game-container { flex: 1; display: flex; justify-content: center; align-items: center; }
-        #hud { width: 300px; background: #0d111a; border-left: 1px solid #222; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
-        h2, h3 { margin: 0 0 10px 0; font-size: 16px; color: #eee; }
-        button { background: #1a2035; color: #fff; border: 1px solid #334; padding: 10px; border-radius: 5px; cursor: pointer; text-align: left; transition: 0.2s; }
-        button:hover { background: #2a3050; }
-        .approval-card { background: #1a1a24; border: 1px solid #f1c40f; padding: 15px; border-radius: 5px; margin-bottom: 10px; font-size: 12px; }
+        body { 
+            margin: 0; 
+            padding: 0; 
+            background: #05050a; 
+            color: #fff; 
+            display: flex; 
+            height: 100vh; 
+            overflow: hidden; 
+            font-family: 'Courier New', Courier, monospace; 
+        }
+        
+        /* Game Canvas Container */
+        #game-container { 
+            flex: 1; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+        }
+
+        /* Right Side HUD */
+        #hud { 
+            width: 320px; 
+            background: #0d111a; 
+            border-left: 2px solid #1a2035; 
+            padding: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 25px; 
+            box-shadow: -5px 0 15px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+
+        h2, h3 { 
+            margin: 0 0 15px 0; 
+            font-size: 16px; 
+            color: #4da6ff; 
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Buttons */
+        button { 
+            background: #131b2e; 
+            color: #a9b7d0; 
+            border: 1px solid #2a3b5c; 
+            padding: 12px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            text-align: left; 
+            transition: all 0.2s; 
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        button:hover { 
+            background: #1c2942; 
+            border-color: #4da6ff;
+            color: #fff;
+        }
+
+        /* Approval Cards */
+        .approval-card { 
+            background: #151a22; 
+            border: 1px solid #f1c40f; 
+            padding: 15px; 
+            border-radius: 4px; 
+            margin-bottom: 10px; 
+            font-size: 12px; 
+            box-shadow: 0 0 10px rgba(241, 196, 15, 0.1);
+        }
+
+        .action-btn {
+            flex: 1; 
+            text-align: center; 
+            padding: 8px; 
+            border-radius: 3px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            border: none;
+        }
     </style>
-    <!-- Load Phaser from CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
-    <!-- Load our config and game logic -->
-    <script src="config.js"></script>
-    <script src="main.js"></script>
 </head>
 <body>
 
+    <!-- Game Renders Here -->
     <div id="game-container"></div>
 
+    <!-- Commander HUD -->
     <div id="hud">
         <div>
             <h2>Commander HUD</h2>
@@ -39,13 +110,19 @@
             </div>
         </div>
 
-        <div>
+        <div style="flex: 1; overflow-y: auto;">
             <h3>Approvals</h3>
-            <div id="approval-container" style="display: flex; flex-direction: column; overflow-y: auto; max-height: 50vh;">
+            <div id="approval-container" style="display: flex; flex-direction: column; gap: 10px;">
                 <!-- Approval cards will appear here -->
             </div>
         </div>
     </div>
 
+    <!-- Load Phaser from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    
+    <!-- Load Config and Game Logic LAST so the buttons exist in the DOM first -->
+    <script src="config.js"></script>
+    <script src="main.js"></script>
 </body>
 </html>
