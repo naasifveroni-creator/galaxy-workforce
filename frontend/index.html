@@ -38,77 +38,51 @@
             padding: 12px; border-radius: 4px; cursor: pointer; text-align: left; 
             transition: all 0.2s; font-family: 'Courier New', Courier, monospace; font-weight: bold;
         }
-        button:hover { background: #1c2942; border-color: #4da6ff; color: #fff; box-shadow: 0 0 10px rgba(77, 166, 255, 0.2); }
+        button:hover { background: #1c2942; border-color: #4da6ff; color: #fff; }
         
         .action-btn { padding: 8px; border-radius: 3px; cursor: pointer; font-weight: bold; border: none; color: white; width: 100%; }
         .approve { background: #2ecc71; }
-        .approve:hover { background: #27ae60; }
         .reject { background: #e74c3c; }
-        .reject:hover { background: #c0392b; }
 
         .approval-card { 
             background: #151a22; border: 1px solid #f1c40f; padding: 15px; 
             border-radius: 4px; margin-bottom: 10px; font-size: 11px; 
-            box-shadow: 0 0 15px rgba(241, 196, 15, 0.15);
         }
 
-        /* --- THE FIXED BOT UPGRADE --- */
-        .bot-container {
-            position: absolute; width: 40px; height: 40px; 
-            /* THIS moves the container */
-            transition: left 2s ease-in-out, top 2s ease-in-out;
-            z-index: 5; display: flex; justify-content: center; align-items: center;
+        /* BOT STYLING - MOVES LEFT/TOP SMOOTHLY */
+        .bot { 
+            position: absolute; width: 40px; height: 40px; border-radius: 50%; 
+            display: flex; justify-content: center; align-items: center; 
+            font-size: 10px; font-weight: bold; color: black; 
+            transition: left 2s linear, top 2s linear;
+            z-index: 5;
+            box-shadow: 0 0 15px currentColor;
+            border: 2px solid rgba(255,255,255,0.5);
         }
-
-        .bot-body { 
-            width: 32px; height: 32px; border-radius: 50%; 
-            position: relative; display: flex; justify-content: center; align-items: center;
-            background: radial-gradient(circle at 30% 30%, #fff, transparent 40%), var(--bot-color);
-            box-shadow: 0 0 15px var(--bot-color), inset -5px -5px 15px rgba(0,0,0,0.5);
-            border: 2px solid rgba(255, 255, 255, 0.8);
-        }
-
-        /* Animations apply ONLY to the inner body, not the container */
-        .bot-container.walking .bot-body { animation: bob 0.3s infinite alternate; }
-        .bot-container.working .bot-body { animation: pulse 1s infinite alternate; }
-
-        @keyframes bob {
-            from { transform: translateY(0px) scale(1); }
-            to { transform: translateY(-8px) scale(1.05); }
-        }
-
-        @keyframes pulse {
-            from { box-shadow: 0 0 10px var(--bot-color), inset -5px -5px 15px rgba(0,0,0,0.5); transform: scale(1); }
-            to { box-shadow: 0 0 30px var(--bot-color), inset -5px -5px 15px rgba(0,0,0,0.5); transform: scale(1.1); }
-        }
-
-        .bot-label { 
-            position: absolute; top: -25px; white-space: nowrap; color: #fff; 
-            font-size: 10px; font-weight: bold; text-shadow: 1px 1px 3px black, 0 0 5px black;
-        }
-        
-        .bot-status {
-            position: absolute; bottom: -20px; white-space: nowrap; color: #a9b7d0;
-            font-size: 9px; text-transform: uppercase; letter-spacing: 1px;
-        }
+        .bot-label { position: absolute; top: -25px; white-space: nowrap; color: white; font-size: 12px; text-shadow: 1px 1px 2px black; }
     </style>
 </head>
 <body>
 
+    <!-- The Galaxy Map -->
     <div id="game-view">
         <div id="map">
+            <!-- Rooms -->
             <div class="room" style="top: 0; left: 0; width: 300px; height: 200px; background: rgba(69, 26, 26, 0.5);">Comms Array</div>
             <div class="room" style="top: 0; right: 0; width: 300px; height: 200px; background: rgba(15, 58, 77, 0.5);">Data Forge</div>
             <div class="room" style="bottom: 0; left: 0; width: 300px; height: 200px; background: rgba(26, 61, 26, 0.5);">Strategy Deck</div>
             <div class="room" style="bottom: 50px; left: 250px; width: 300px; height: 150px; background: rgba(30, 41, 59, 0.8); border-color: #4da6ff;">Bridge (HQ)</div>
+            <!-- Bots spawn here -->
         </div>
     </div>
 
+    <!-- The HUD -->
     <div id="hud">
         <div>
             <h2>Commander HUD</h2>
             <div id="connection-status" style="font-size: 12px; color: #f1c40f;">connecting...</div>
         </div>
+
         <div>
             <h3>Dispatch</h3>
             <div style="display: flex; flex-direction: column; gap: 10px;">
@@ -118,6 +92,7 @@
                 <button onclick="sendDispatch('report_bot')">▶ Run ReportBot</button>
             </div>
         </div>
+
         <div style="flex: 1; overflow-y: auto;">
             <h3>Approvals</h3>
             <div id="approval-container" style="display: flex; flex-direction: column; gap: 10px;"></div>
@@ -128,7 +103,7 @@
         const WS_URL = "wss://orange-system-g4w4gq7r9gxxcw7q-8000.app.github.dev/ws";
         let ws;
         let bots = {}; 
-        let activeTasks = {}; 
+        let activeTasks = {}; // Stores task IDs
 
         const ROOMS = {
             bridge: { x: 400, y: 475 },
@@ -167,14 +142,10 @@
             
             if (!botEl) {
                 botEl = document.createElement('div');
-                botEl.className = 'bot-container';
-                botEl.style.setProperty('--bot-color', data.color);
-                
-                botEl.innerHTML = `
-                    <div class="bot-label">${data.name}</div>
-                    <div class="bot-body"></div>
-                    <div class="bot-status">${data.status}</div>
-                `;
+                botEl.className = 'bot';
+                botEl.style.backgroundColor = data.color;
+                botEl.style.color = data.color;
+                botEl.innerHTML = `<div class="bot-label">${data.name}</div><span style="z-index:10; position:relative;">${data.status}</span>`;
                 
                 const offset = data.bot_id === 'email_bot' ? -60 : data.bot_id === 'data_bot' ? -20 : data.bot_id === 'excel_bot' ? 20 : 60;
                 botEl.style.left = (ROOMS.bridge.x + offset) + 'px';
@@ -184,14 +155,7 @@
                 bots[data.bot_id] = botEl;
             }
 
-            botEl.querySelector('.bot-status').innerText = data.status.replace('_', ' ');
-
-            botEl.classList.remove('walking', 'working');
-            if (data.status === 'walking') {
-                botEl.classList.add('walking');
-            } else if (data.status === 'working' || data.status === 'awaiting_approval') {
-                botEl.classList.add('working');
-            }
+            botEl.querySelector('span').innerText = data.status.replace('_', ' ');
 
             const room = ROOMS[data.location] || ROOMS.bridge;
             const offset = data.bot_id === 'email_bot' ? -60 : data.bot_id === 'data_bot' ? -20 : data.bot_id === 'excel_bot' ? 20 : 60;
@@ -206,14 +170,15 @@
             card.className = 'approval-card';
             card.id = `card-${data.bot_id}`;
             
-            activeTasks[data.bot_id] = data.task_id; // Save task_id
+            // Save the task_id sent from backend
+            activeTasks[data.bot_id] = data.task_id;
             
             let preview = data.preview ? JSON.stringify(data.preview, null, 2) : "No preview data.";
             
             card.innerHTML = `
                 <div style="font-weight:bold; color:#4da6ff; margin-bottom:5px;">${data.bot_id}</div>
                 <div style="margin-bottom:10px;">${data.summary}</div>
-                <pre style="background:#000; padding:5px; font-size:10px; max-height:100px; overflow-y:auto; color:#0f0; white-space: pre-wrap;">${preview}</pre>
+                <pre style="background:#000; padding:5px; font-size:10px; max-height:100px; overflow-y:auto; color:#0f0;">${preview}</pre>
                 <div style="display:flex; gap:10px; margin-top:10px;">
                     <button class="action-btn approve" onclick="sendApproval('${data.bot_id}', true)">APPROVE</button>
                     <button class="action-btn reject" onclick="sendApproval('${data.bot_id}', false)">REJECT</button>
@@ -231,12 +196,15 @@
         function sendApproval(botId, isApproved) {
             if (ws && ws.readyState === WebSocket.OPEN) {
                 const taskId = activeTasks[botId];
+                
+                // Send the EXACT payload the new backend requires
                 ws.send(JSON.stringify({ 
                     type: isApproved ? 'APPROVE_ACTION' : 'REJECT_ACTION',
                     bot_id: botId,
                     task_id: taskId,
                     approved: isApproved 
                 }));
+                
                 const card = document.getElementById(`card-${botId}`);
                 if (card) card.remove();
             }
