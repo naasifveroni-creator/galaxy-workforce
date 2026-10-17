@@ -222,3 +222,68 @@ button:hover {
 .close-btn:hover {
   background: rgba(231, 76, 60, 0.3);
 }
+/* --- MINIMAP RADAR --- */
+.minimap-container {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  width: 200px;
+  height: 200px;
+  background: rgba(2, 4, 10, 0.85);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  border-radius: 50%; /* Makes it circular */
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.1), inset 0 0 20px rgba(0, 240, 255, 0.05);
+  backdrop-filter: blur(5px);
+  z-index: 50;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Radar Grid Lines */
+.minimap-map {
+  position: relative;
+  width: 80%;
+  height: 80%;
+  border: 1px dashed rgba(0, 240, 255, 0.2);
+  border-radius: 50%;
+}
+
+.minimap-title {
+  position: absolute;
+  top: -25px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  color: #00f0ff;
+  letter-spacing: 2px;
+}
+
+.map-room {
+  position: absolute;
+  background: rgba(0, 240, 255, 0.1);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+}
+
+/* Approximate room placements on the map (scaled from 3D coords) */
+.map-bridge { width: 30%; height: 25%; top: 35%; left: 35%; }
+.map-comms { width: 20%; height: 20%; top: 10%; left: 10%; }
+.map-data { width: 20%; height: 20%; top: 10%; right: 10%; }
+.map-strategy { width: 20%; height: 20%; bottom: 10%; left: 10%; }
+.map-office { width: 20%; height: 20%; bottom: 10%; right: 10%; }
+
+.map-dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%); /* Centers the dot on the coordinate */
+  transition: all 0.3s ease; /* Smooth gliding on the map too */
+}
+
+.commander-dot {
+  background-color: #f1c40f;
+  box-shadow: 0 0 10px #f1c40f;
+  z-index: 10;
+  width: 10px;
+  height: 10px;
+}

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Box, Grid, Text, Html, RoundedBox } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
+import * as THREE from 'three';
 import './App.css';
 
 const WS_URL = "wss://orange-system-g4w4gq7r9gxxcw7q-8000.app.github.dev/ws";
@@ -20,33 +21,6 @@ const ROOM_POSITIONS = {
   data_forge: { x: 8, z: -8, label: "Data Forge" },
   strategy_deck: { x: -8, z: 8, label: "Strategy Deck" },
   office: { x: 8, z: 8, label: "Commander's Office" }
-};
-
-// --- PARTICLES ---
-const DataParticles = () => {
-  const pointsRef = useRef();
-  const positions = React.useMemo(() => {
-    const pos = new Float32Array(600);
-    for (let i = 0; i < 600; i += 3) {
-      pos[i] = (Math.random() - 0.5) * 40;     
-      pos[i + 1] = Math.random() * 10;          
-      pos[i + 2] = (Math.random() - 0.5) * 40; 
-    }
-    return pos;
-  }, []);
-
-  useFrame((state, delta) => {
-    if (pointsRef.current) pointsRef.current.rotation.y += delta * 0.02;
-  });
-
-  return (
-    <points ref={pointsRef}>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" count={200} array={positions} itemSize={3} />
-      </bufferGeometry>
-      <pointsMaterial size={0.08} color="#00f0ff" transparent opacity={0.6} sizeAttenuation />
-    </points>
-  );
 };
 
 // --- MACHINERY ---
@@ -245,7 +219,6 @@ const Crewmate3D = ({ color, name, status, isCommander }) => {
         <meshBasicMaterial color={isCommander ? "#f1c40f" : color} transparent opacity={0.8} />
       </mesh>
       
-      {/* FIX: The closing </div> and </Html> were missing here */}
       <Html position={[0, 1.2, 0]} center>
         <div style={{ color: isCommander ? '#f1c40f' : '#fff', fontFamily: 'Orbitron', fontSize: '10px', whiteSpace: 'nowrap', textShadow: '1px 1px 3px #000', textAlign: 'center', fontWeight: 'bold' }}>
           {name}
@@ -256,8 +229,62 @@ const Crewmate3D = ({ color, name, status, isCommander }) => {
   );
 };
 
+// --- WALKING BOT COMPONENT ---
+// This component handles the gliding logic over time
+const MovingBot = ({ bot }) => {
+  const groupRef = useRef();
+  
+  // Calculate target position based on location
+  const getTargetPos = (loc, id) => {
+    let x = 0, z = 0;
+    if (loc === 'comms_array') { x = -8; z = -8; }
+    if (loc === 'data_forge') { x = 8; z = -8; }
+    if (loc === 'strategy_deck') { x = -8; z = 8; }
+    if (loc === 'office') { x = 8; z = 8; }
+    
+    // Spread offsets
+    if (id === 'email_bot') x -= 2;
+    if (id === 'data_bot') z -= 2;
+    if (id === 'excel_bot') x += 2;
+    if (id === 'report_bot') z += 2;
+    return new THREE.Vector3(x, 0.6, z);
+  };
+
+  const targetPos = useRef(getTargetPos(bot.location, bot.bot_id));
+  const isMoving = useRef(false);
+
+  // When the bot's location changes, update the target
+  useEffect(() => {
+    const newTarget = getTargetPos(bot.location, bot.bot_id);
+    if (!newTarget.equals(targetPos.current)) {
+      targetPos.current = newTarget;
+      isMoving.current = true;
+    }
+  }, [bot.location, bot.bot_id]);
+
+  useFrame((state, delta) => {
+    if (!groupRef.current || !isMoving.current) return;
+
+    // Smoothly lerp (interpolate) towards the target position
+    const speed = 4 * delta; // Movement speed
+    groupRef.current.position.lerp(targetPos.current, speed);
+
+    // Stop moving if we are very close to the target
+    if (groupRef.current.position.distanceTo(targetPos.current) < 0.05) {
+      groupRef.current.position.copy(targetPos.current);
+      isMoving.current = false;
+    }
+  });
+
+  return (
+    <group ref={groupRef} position={getTargetPos(bot.location, bot.bot_id)}>
+      <Crewmate3D color={BOT_COLORS[bot.bot_id]} name={bot.name} status={bot.status} />
+    </group>
+  );
+};
+
 // --- THE COMMANDER ---
-const Commander = ({ activeRoom, setActiveRoom, isPaused }) => {
+const Commander = ({ activeRoom, setActiveRoom, isPaused, commanderPos }) => {
   const ref = useRef();
   const keys = useRef({});
   
@@ -276,6 +303,9 @@ const Commander = ({ activeRoom, setActiveRoom, isPaused }) => {
     if (keys.current['s'] || keys.current['arrowdown']) ref.current.position.z += speed;
     if (keys.current['a'] || keys.current['arrowleft']) ref.current.position.x -= speed;
     if (keys.current['d'] || keys.current['arrowright']) ref.current.position.x += speed;
+
+    // Update the external minimap position reference
+    commanderPos.current = { x: ref.current.position.x, z: ref.current.position.z };
 
     let closestRoom = null;
     let minDist = 4;
@@ -301,6 +331,58 @@ const Commander = ({ activeRoom, setActiveRoom, isPaused }) => {
   );
 };
 
+// --- MINIMAP COMPONENT ---
+const Minimap = ({ bots, commanderPos }) => {
+  return (
+    <div className="minimap-container">
+      <div className="minimap-title">TACTICAL RADAR</div>
+      <div className="minimap-map">
+        {/* Room outlines */}
+        <div className="map-room map-bridge" title="Bridge"></div>
+        <div className="map-room map-comms" title="Comms"></div>
+        <div className="map-room map-data" title="Data"></div>
+        <div className="map-room map-strategy" title="Strategy"></div>
+        <div className="map-room map-office" title="Office"></div>
+
+        {/* Commander Dot */}
+        <div 
+          className="map-dot commander-dot" 
+          style={{ 
+            left: `calc(50% + ${commanderPos.current.x * 3}%)`, 
+            top: `calc(50% + ${commanderPos.current.z * 3}%)` 
+          }} 
+        />
+
+        {/* Bot Dots */}
+        {Object.values(bots).map(bot => {
+          let x = 0, z = 0;
+          if (bot.location === 'comms_array') { x = -8; z = -8; }
+          if (bot.location === 'data_forge') { x = 8; z = -8; }
+          if (bot.location === 'strategy_deck') { x = -8; z = 8; }
+          if (bot.location === 'office') { x = 8; z = 8; }
+          if (bot.bot_id === 'email_bot') x -= 2;
+          if (bot.bot_id === 'data_bot') z -= 2;
+          if (bot.bot_id === 'excel_bot') x += 2;
+          if (bot.bot_id === 'report_bot') z += 2;
+
+          return (
+            <div 
+              key={bot.bot_id} 
+              className="map-dot bot-dot" 
+              style={{ 
+                left: `calc(50% + ${x * 3}%)`, 
+                top: `calc(50% + ${z * 3}%)`,
+                backgroundColor: BOT_COLORS[bot.bot_id],
+                boxShadow: `0 0 8px ${BOT_COLORS[bot.bot_id]}`
+              }} 
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 // --- MAIN APP ---
 export default function App() {
   const [bots, setBots] = useState({});
@@ -308,6 +390,9 @@ export default function App() {
   const [socket, setSocket] = useState(null);
   const [activeRoom, setActiveRoom] = useState(null);
   const [openRoom, setOpenRoom] = useState(null);
+  
+  // Reference to track Commander's position for the minimap
+  const commanderPos = useRef({ x: 8, z: 8 });
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -354,7 +439,6 @@ export default function App() {
             
             <Grid position={[0, -1, 0]} args={[50, 50]} cellSize={1} cellThickness={0.5} cellColor="#00f0ff" sectionSize={5} sectionThickness={1} sectionColor="#00f0ff" fadeDistance={30} fadeStrength={1} />
 
-            <DataParticles />
             <OrbitControls makeDefault maxPolarAngle={Math.PI / 2.2} minDistance={10} maxDistance={40} />
 
             {!openRoom && Object.entries(ROOM_POSITIONS).map(([id, room]) => (
@@ -389,33 +473,22 @@ export default function App() {
             
             <Room position={[8, 0, 8]} size={[5, 1, 5]} color={ROOM_COLORS.office} label="Commander's Office">
               <OfficeMachinery position={[0, 0, -1]} />
-              <Commander activeRoom={activeRoom} setActiveRoom={setActiveRoom} isPaused={!!openRoom} />
+              <Commander activeRoom={activeRoom} setActiveRoom={setActiveRoom} isPaused={!!openRoom} commanderPos={commanderPos} />
             </Room>
 
-            {Object.values(bots).map((bot) => {
-              let x = 0, z = 0;
-              if (bot.location === 'comms_array') { x = -8; z = -8; }
-              if (bot.location === 'data_forge') { x = 8; z = -8; }
-              if (bot.location === 'strategy_deck') { x = -8; z = 8; }
-              if (bot.location === 'office') { x = 8; z = 8; }
-              
-              if (bot.bot_id === 'email_bot') x -= 2;
-              if (bot.bot_id === 'data_bot') z -= 2;
-              if (bot.bot_id === 'excel_bot') x += 2;
-              if (bot.bot_id === 'report_bot') z += 2;
-
-              return (
-                <group key={bot.bot_id} position={[x, 0.6, z]}>
-                  <Crewmate3D color={BOT_COLORS[bot.bot_id]} name={bot.name} status={bot.status} />
-                </group>
-              );
-            })}
+            {/* BOTS (Now using the MovingBot component) */}
+            {Object.values(bots).map((bot) => (
+              <MovingBot key={bot.bot_id} bot={bot} />
+            ))}
 
             <EffectComposer>
               <Bloom luminanceThreshold={0.5} mipmapBlur intensity={1.5} />
             </EffectComposer>
           </Canvas>
         </Suspense>
+
+        {/* Minimap Overlay */}
+        <Minimap bots={bots} commanderPos={commanderPos} />
       </div>
 
       <div className="hud-panel">
