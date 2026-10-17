@@ -153,10 +153,10 @@ export default function App() {
               if (bot.location === 'strategy_deck') { x = -8; z = 8; }
               if (bot.location === 'office') { x = 8; z = 8; }
               
-              if (bot.bot_id === 'email_bot') x -= 1;
-              if (bot.bot_id === 'data_bot') z -= 1;
-              if (bot.bot_id === 'excel_bot') x += 1;
-              if (bot.bot_id === 'report_bot') z += 1;
+              if (bot.bot_id === 'email_bot') x -= 2;
+              if (bot.bot_id === 'data_bot') z -= 2;
+              if (bot.bot_id === 'excel_bot') x += 2;
+              if (bot.bot_id === 'report_bot') z += 2;
 
               return (
                 <Bot 
