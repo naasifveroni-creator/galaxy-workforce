@@ -22,7 +22,7 @@ const ROOM_POSITIONS = {
   office: { x: 8, z: 8, label: "Commander's Office" }
 };
 
-// --- FLOATING PARTICLES ---
+// --- PARTICLES ---
 const DataParticles = () => {
   const pointsRef = useRef();
   const positions = React.useMemo(() => {
@@ -50,6 +50,8 @@ const DataParticles = () => {
 };
 
 // --- 3D MACHINERY ---
+
+// 1. Bridge Command Table
 const CommandTable = ({ position }) => {
   const ref = useRef();
   useFrame((state, delta) => (ref.current.rotation.y += delta * 0.5));
@@ -71,6 +73,7 @@ const CommandTable = ({ position }) => {
   );
 };
 
+// 2. Data Forge Core
 const DataForgeCore = ({ position }) => {
   const ref = useRef();
   useFrame((state, delta) => (ref.current.rotation.z += delta));
@@ -89,6 +92,95 @@ const DataForgeCore = ({ position }) => {
   );
 };
 
+// 3. Comms Array Server Racks & Dish
+const CommsMachinery = ({ position }) => {
+  const dishRef = useRef();
+  useFrame((state, delta) => (dishRef.current.rotation.y += delta * 0.2));
+  
+  return (
+    <group position={position}>
+      {/* Server Racks */}
+      {[-1.5, 0, 1.5].map((x, i) => (
+        <group key={i} position={[x, 0.5, -1]}>
+          <RoundedBox args={[0.8, 1.5, 0.6]} radius={0.05}>
+            <meshStandardMaterial color="#111" metalness={0.8} />
+          </RoundedBox>
+          {/* Blinking Lights */}
+          {[-0.4, 0, 0.4].map((y, j) => (
+            <mesh key={j} position={[0, y, 0.31]}>
+              <sphereGeometry args={[0.05, 8, 8]} />
+              <meshBasicMaterial color={j % 2 === 0 ? "#ff0000" : "#00ff00"} />
+            </mesh>
+          ))}
+        </group>
+      ))}
+      {/* Radar Dish */}
+      <group position={[0, 1.5, 1]} ref={dishRef}>
+        <mesh rotation={[Math.PI / 4, 0, 0]}>
+          <sphereGeometry args={[0.8, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
+          <meshStandardMaterial color="#888" side={2} metalness={0.9} roughness={0.1} />
+        </mesh>
+        <mesh position={[0, -0.5, 0]}>
+          <cylinderGeometry args={[0.1, 0.1, 1]} />
+          <meshStandardMaterial color="#555" />
+        </mesh>
+      </group>
+      <pointLight color="#ff0000" intensity={2} distance={5} position={[0, 1, -1]} />
+    </group>
+  );
+};
+
+// 4. Strategy Deck War Table & Holo Chart
+const StrategyMachinery = ({ position }) => {
+  const chartRef = useRef();
+  useFrame((state, delta) => (chartRef.current.rotation.y += delta * 0.5));
+  
+  return (
+    <group position={position}>
+      {/* Base Table */}
+      <RoundedBox args={[3, 0.2, 2]} position={[0, 0, 0]} radius={0.1}>
+        <meshStandardMaterial color="#0f2410" metalness={0.8} roughness={0.2} />
+      </RoundedBox>
+      
+      {/* Holo Projector Base */}
+      <mesh position={[0, 0.15, 0]}>
+        <cylinderGeometry args={[0.8, 0.8, 0.1, 32]} />
+        <meshStandardMaterial color="#2ecc71" emissive="#2ecc71" emissiveIntensity={1} />
+      </mesh>
+
+      {/* Floating 3D Bar Chart */}
+      <group ref={chartRef} position={[0, 1, 0]}>
+        <Box args={[0.3, 0.6, 0.3]} position={[-0.5, 0.3, 0]}>
+          <meshStandardMaterial color="#2ecc71" emissive="#2ecc71" emissiveIntensity={2} transparent opacity={0.8} />
+        </Box>
+        <Box args={[0.3, 1, 0.3]} position={[0, 0.5, 0]}>
+          <meshStandardMaterial color="#2ecc71" emissive="#2ecc71" emissiveIntensity={2} transparent opacity={0.8} />
+        </Box>
+        <Box args={[0.3, 1.4, 0.3]} position={[0.5, 0.7, 0]}>
+          <meshStandardMaterial color="#2ecc71" emissive="#2ecc71" emissiveIntensity={2} transparent opacity={0.8} />
+        </Box>
+      </group>
+      <pointLight color="#2ecc71" intensity={3} distance={6} position={[0, 1.5, 0]} />
+    </group>
+  );
+};
+
+// 5. Office Desk
+const OfficeMachinery = ({ position }) => {
+  return (
+    <group position={position}>
+      <RoundedBox args={[2, 0.2, 1]} position={[0, 0, 0]} radius={0.05}>
+        <meshStandardMaterial color="#2c1e38" metalness={0.6} roughness={0.4} />
+      </RoundedBox>
+      <mesh position={[0, 0.2, 0]}>
+        <boxGeometry args={[0.6, 0.4, 0.1]} />
+        <meshStandardMaterial color="#9b59b6" emissive="#9b59b6" emissiveIntensity={1.5} />
+      </mesh>
+      <pointLight color="#9b59b6" intensity={2} distance={4} position={[0, 0.5, 0]} />
+    </group>
+  );
+};
+
 // --- ROOM COMPONENT ---
 const Room = ({ position, size, color, label, children }) => {
   const [width, , depth] = size;
@@ -100,7 +192,6 @@ const Room = ({ position, size, color, label, children }) => {
       <Box args={[width, 0.5, depth]} position={[0, -0.25, 0]}>
         <meshStandardMaterial color={color} transparent opacity={0.9} />
       </Box>
-      
       <Box args={[width, 0.1, depth]} position={[0, 0, 0]}>
         <meshBasicMaterial color="#00f0ff" wireframe />
       </Box>
@@ -216,19 +307,13 @@ export default function App() {
   const [bots, setBots] = useState({});
   const [approvals, setApprovals] = useState([]);
   const [socket, setSocket] = useState(null);
-  
   const [activeRoom, setActiveRoom] = useState(null);
   const [openRoom, setOpenRoom] = useState(null);
 
-  // Handle Keyboard E Press globally
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key.toLowerCase() === 'e' && activeRoom && !openRoom) {
-        setOpenRoom(activeRoom);
-      }
-      if (e.key === 'Escape') {
-        setOpenRoom(null);
-      }
+      if (e.key.toLowerCase() === 'e' && activeRoom && !openRoom) setOpenRoom(activeRoom);
+      if (e.key === 'Escape') setOpenRoom(null);
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -268,41 +353,44 @@ export default function App() {
             <ambientLight intensity={0.3} />
             <directionalLight position={[10, 20, 10]} intensity={1} castShadow shadow-mapSize={[2048, 2048]} />
             
-            <Grid 
-              position={[0, -1, 0]} args={[50, 50]} cellSize={1} cellThickness={0.5} cellColor="#00f0ff" 
-              sectionSize={5} sectionThickness={1} sectionColor="#00f0ff" fadeDistance={30} fadeStrength={1} 
-            />
+            <Grid position={[0, -1, 0]} args={[50, 50]} cellSize={1} cellThickness={0.5} cellColor="#00f0ff" sectionSize={5} sectionThickness={1} sectionColor="#00f0ff" fadeDistance={30} fadeStrength={1} />
 
             <DataParticles />
             <OrbitControls makeDefault maxPolarAngle={Math.PI / 2.2} minDistance={10} maxDistance={40} />
 
-            {/* DYNAMIC TOOLTIPS (Hidden when modal is open) */}
             {!openRoom && Object.entries(ROOM_POSITIONS).map(([id, room]) => (
               <Html key={id} position={[room.x, 3.5, room.z]} center>
                 <div style={{ 
                   background: activeRoom === id ? 'rgba(46, 204, 113, 0.9)' : 'rgba(0, 0, 0, 0.8)', 
                   border: activeRoom === id ? '1px solid #fff' : '1px solid #555', 
-                  padding: '4px 8px', borderRadius: '4px', 
-                  color: '#fff', fontFamily: 'Orbitron', fontSize: '10px', 
+                  padding: '4px 8px', borderRadius: '4px', color: '#fff', fontFamily: 'Orbitron', fontSize: '10px', 
                   whiteSpace: 'nowrap', boxShadow: activeRoom === id ? '0 0 15px #2ecc71' : 'none',
-                  transition: 'all 0.2s',
-                  cursor: activeRoom === id ? 'pointer' : 'default'
+                  transition: 'all 0.2s', cursor: activeRoom === id ? 'pointer' : 'default'
                 }} onClick={() => { if(activeRoom === id) setOpenRoom(id); }}>
                   {activeRoom === id ? `PRESS [E] - ${room.label.toUpperCase()}` : room.label.toUpperCase()}
                 </div>
               </Html>
             ))}
 
-            {/* ROOMS */}
+            {/* ROOMS WITH MACHINERY */}
             <Room position={[0, 0, 0]} size={[8, 1, 6]} color={ROOM_COLORS.bridge} label="Bridge (HQ)">
               <CommandTable position={[0, 0, 0]} />
             </Room>
-            <Room position={[-8, 0, -8]} size={[5, 1, 5]} color={ROOM_COLORS.comms_array} label="Comms Array" />
+            
+            <Room position={[-8, 0, -8]} size={[5, 1, 5]} color={ROOM_COLORS.comms_array} label="Comms Array">
+              <CommsMachinery position={[0, 0, 0]} />
+            </Room>
+            
             <Room position={[8, 0, -8]} size={[5, 1, 5]} color={ROOM_COLORS.data_forge} label="Data Forge">
               <DataForgeCore position={[0, 1, 0]} />
             </Room>
-            <Room position={[-8, 0, 8]} size={[5, 1, 5]} color={ROOM_COLORS.strategy_deck} label="Strategy Deck" />
+            
+            <Room position={[-8, 0, 8]} size={[5, 1, 5]} color={ROOM_COLORS.strategy_deck} label="Strategy Deck">
+              <StrategyMachinery position={[0, 0, 0]} />
+            </Room>
+            
             <Room position={[8, 0, 8]} size={[5, 1, 5]} color={ROOM_COLORS.office} label="Commander's Office">
+              <OfficeMachinery position={[0, 0, -1]} />
               <Commander activeRoom={activeRoom} setActiveRoom={setActiveRoom} isPaused={!!openRoom} />
             </Room>
 
@@ -333,7 +421,6 @@ export default function App() {
         </Suspense>
       </div>
 
-      {/* HUD UI */}
       <div className="hud-panel">
         <div className="profile-card">
           <div style={{ color: '#00f0ff', fontFamily: 'Orbitron' }}>⚔️ COMMANDER</div>
@@ -366,13 +453,11 @@ export default function App() {
         </div>
       </div>
 
-      {/* --- ROOM INTERACTION MODAL --- */}
       {openRoom && (
         <div className="room-modal-overlay" onClick={() => setOpenRoom(null)}>
           <div className="room-modal" onClick={e => e.stopPropagation()}>
             <h2>{ROOM_POSITIONS[openRoom].label}</h2>
             <p>Terminal Access Granted. Welcome, Commander.</p>
-            
             <div className="terminal-data">
               {openRoom === 'data_forge' && <p>Analyzing CSV... 200 rows processed.</p>}
               {openRoom === 'comms_array' && <p>Inbox: 4 unread messages.</p>}
@@ -380,7 +465,6 @@ export default function App() {
               {openRoom === 'bridge' && <p>Ship status: All systems nominal.</p>}
               {openRoom === 'office' && <p>Commander's personal logs.</p>}
             </div>
-            
             <button className="close-btn" onClick={() => setOpenRoom(null)}>CLOSE TERMINAL [ESC]</button>
           </div>
         </div>
