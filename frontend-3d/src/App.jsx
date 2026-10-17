@@ -8,7 +8,13 @@ import './App.css';
 const WS_URL = "wss://orange-system-g4w4gq7r9gxxcw7q-8000.app.github.dev/ws";
 
 const ROOM_COLORS = {
-  bridge: '#1e293b', comms_array: '#451a1a', data_forge: '#0f3a4d', strategy_deck: '#1a3d1a', office: '#3b2b4d'
+  bridge: '#1e293b', 
+  comms_array: '#451a1a', 
+  data_forge: '#0f3a4d', 
+  strategy_deck: '#1a3d1a', 
+  office: '#3b2b4d',
+  hangar_bay: '#2c3e50',
+  medbay: '#4a235a'
 };
 
 const BOT_COLORS = {
@@ -20,7 +26,9 @@ const ROOM_POSITIONS = {
   comms_array: { x: -8, z: -8, label: "Comms Array" },
   data_forge: { x: 8, z: -8, label: "Data Forge" },
   strategy_deck: { x: -8, z: 8, label: "Strategy Deck" },
-  office: { x: 8, z: 8, label: "Commander's Office" }
+  office: { x: 8, z: 8, label: "Commander's Office" },
+  hangar_bay: { x: 0, z: -14, label: "Hangar Bay" },
+  medbay: { x: 0, z: 14, label: "MedBay" }
 };
 
 // --- WARP SPEED STARFIELD ---
@@ -250,6 +258,80 @@ const OfficeMachinery = ({ position }) => {
   );
 };
 
+// --- NEW: HANGAR BAY MACHINERY ---
+const HangarMachinery = ({ position }) => {
+  const shipRef = useRef();
+  useFrame((state) => {
+    // Hover the ship up and down
+    if (shipRef.current) {
+      shipRef.current.position.y = 0.5 + Math.sin(state.clock.elapsedTime * 2) * 0.2;
+    }
+  });
+  
+  return (
+    <group position={position}>
+      {/* Landing Pad */}
+      <mesh position={[0, -0.1, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[1.5, 1.8, 32]} />
+        <meshBasicMaterial color="#00f0ff" transparent opacity={0.5} side={THREE.DoubleSide} />
+      </mesh>
+      
+      {/* Hovering Ship */}
+      <group ref={shipRef} position={[0, 0.5, 0]}>
+        <mesh>
+          <coneGeometry args={[0.6, 2, 4]} rotation={[Math.PI/2, 0, 0]} />
+          <meshStandardMaterial color="#555" metalness={0.9} roughness={0.2} />
+        </mesh>
+        <mesh position={[0, 0, -0.8]} rotation={[Math.PI/2, 0, 0]}>
+          <cylinderGeometry args={[0.3, 0.3, 0.5]} />
+          <meshStandardMaterial color="#00f0ff" emissive="#00f0ff" emissiveIntensity={2} />
+        </mesh>
+      </group>
+      
+      <pointLight color="#00f0ff" intensity={2} distance={5} position={[0, 1, 0]} />
+      <SecurityCamera position={[2.5, 1.5, -2]} />
+      <FloatingStatBar position={[0, 2.5, 0]} label="HANGAR STATUS" color="#00f0ff" width={2} />
+    </group>
+  );
+};
+
+// --- NEW: MEDBAY MACHINERY ---
+const MedbayMachinery = ({ position }) => {
+  const scanRef = useRef();
+  useFrame((state) => {
+    // Rotating Medical Scanner
+    if (scanRef.current) {
+      scanRef.current.rotation.y += 0.02;
+      scanRef.current.position.y = 0.5 + Math.sin(state.clock.elapsedTime * 3) * 0.1;
+    }
+  });
+  
+  return (
+    <group position={position}>
+      {/* Medical Bed */}
+      <RoundedBox args={[1.5, 0.2, 1]} position={[0, 0, 0]} radius={0.1}>
+        <meshStandardMaterial color="#ecf0f1" metalness={0.5} roughness={0.5} />
+      </RoundedBox>
+      
+      {/* Holographic Scanner */}
+      <group ref={scanRef} position={[0, 0.5, 0]}>
+        <mesh rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[0.6, 0.7, 32]} />
+          <meshBasicMaterial color="#e74c3c" transparent opacity={0.8} side={THREE.DoubleSide} />
+        </mesh>
+        <mesh position={[0, 0.2, 0]}>
+          <cylinderGeometry args={[0.05, 0.05, 1]} />
+          <meshBasicMaterial color="#e74c3c" />
+        </mesh>
+      </group>
+      
+      <pointLight color="#e74c3c" intensity={2} distance={4} position={[0, 1, 0]} />
+      <SecurityCamera position={[2.5, 1.5, -2]} />
+      <FloatingStatBar position={[0, 2.5, 0]} label="MEDICAL BAY" color="#e74c3c" width={2} />
+    </group>
+  );
+};
+
 // --- ROOM COMPONENT ---
 const Room = ({ position, size, color, label, children }) => {
   const [width, , depth] = size;
@@ -339,6 +421,8 @@ const MovingBot = ({ bot }) => {
     if (loc === 'data_forge') { x = 8; z = -8; }
     if (loc === 'strategy_deck') { x = -8; z = 8; }
     if (loc === 'office') { x = 8; z = 8; }
+    if (loc === 'hangar_bay') { x = 0; z = -14; }
+    if (loc === 'medbay') { x = 0; z = 14; }
     
     if (id === 'email_bot') x -= 2;
     if (id === 'data_bot') z -= 2;
@@ -407,13 +491,28 @@ const MovingBot = ({ bot }) => {
   );
 };
 
-// --- THE COMMANDER ---
+// --- THE COMMANDER (With Scan Ability) ---
 const Commander = ({ activeRoom, setActiveRoom, isPaused, commanderPos }) => {
   const ref = useRef();
   const keys = useRef({});
+  const scanRef = useRef();
+  const scanTime = useRef(0);
   
   useEffect(() => {
-    const down = (e) => keys.current[e.key.toLowerCase()] = true;
+    const down = (e) => {
+      keys.current[e.key.toLowerCase()] = true;
+      
+      // SPACEBAR SCAN ABILITY
+      if (e.code === 'Space') {
+        if (scanRef.current && scanTime.current <= 0) {
+          scanTime.current = 1.5; // Animation duration
+          scanRef.current.position.set(ref.current.position.x, 0.2, ref.current.position.z);
+          scanRef.current.visible = true;
+          scanRef.current.scale.set(1, 1, 1);
+          scanRef.current.material.opacity = 1;
+        }
+      }
+    };
     const up = (e) => keys.current[e.key.toLowerCase()] = false;
     window.addEventListener('keydown', down);
     window.addEventListener('keyup', up);
@@ -421,35 +520,57 @@ const Commander = ({ activeRoom, setActiveRoom, isPaused, commanderPos }) => {
   }, []);
 
   useFrame((state, delta) => {
-    if (!ref.current || isPaused) return;
-    const speed = 5 * delta;
-    if (keys.current['w'] || keys.current['arrowup']) ref.current.position.z -= speed;
-    if (keys.current['s'] || keys.current['arrowdown']) ref.current.position.z += speed;
-    if (keys.current['a'] || keys.current['arrowleft']) ref.current.position.x -= speed;
-    if (keys.current['d'] || keys.current['arrowright']) ref.current.position.x += speed;
+    // 1. Movement
+    if (ref.current && !isPaused) {
+      const speed = 5 * delta;
+      if (keys.current['w'] || keys.current['arrowup']) ref.current.position.z -= speed;
+      if (keys.current['s'] || keys.current['arrowdown']) ref.current.position.z += speed;
+      if (keys.current['a'] || keys.current['arrowleft']) ref.current.position.x -= speed;
+      if (keys.current['d'] || keys.current['arrowright']) ref.current.position.x += speed;
+      
+      commanderPos.current = { x: ref.current.position.x, z: ref.current.position.z };
 
-    commanderPos.current = { x: ref.current.position.x, z: ref.current.position.z };
+      let closestRoom = null;
+      let minDist = 4;
 
-    let closestRoom = null;
-    let minDist = 4;
+      Object.entries(ROOM_POSITIONS).forEach(([id, pos]) => {
+        const dx = ref.current.position.x - pos.x;
+        const dz = ref.current.position.z - pos.z;
+        const dist = Math.sqrt(dx*dx + dz*dz);
+        if (dist < minDist) {
+          minDist = dist;
+          closestRoom = id;
+        }
+      });
 
-    Object.entries(ROOM_POSITIONS).forEach(([id, pos]) => {
-      const dx = ref.current.position.x - pos.x;
-      const dz = ref.current.position.z - pos.z;
-      const dist = Math.sqrt(dx*dx + dz*dz);
-      if (dist < minDist) {
-        minDist = dist;
-        closestRoom = id;
+      if (closestRoom !== activeRoom) setActiveRoom(closestRoom);
+    }
+
+    // 2. Scan Ability Animation
+    if (scanTime.current > 0) {
+      scanTime.current -= delta;
+      if (scanRef.current) {
+        const scale = 1 + (1.5 - scanTime.current) * 5;
+        scanRef.current.scale.set(scale, scale, 1);
+        scanRef.current.material.opacity = Math.max(0, scanTime.current / 1.5);
+        
+        if (scanTime.current <= 0) {
+          scanRef.current.visible = false;
+        }
       }
-    });
-
-    if (closestRoom !== activeRoom) setActiveRoom(closestRoom);
+    }
   });
 
   return (
     <group ref={ref} position={[8, 0.6, 8]}>
       <Crewmate3D color="#f1c40f" name="COMMANDER" isCommander={true} />
       <pointLight color="#f1c40f" intensity={2} distance={4} position={[0, 0.5, 0]} />
+      
+      {/* The Scanning Ring */}
+      <mesh ref={scanRef} rotation={[-Math.PI / 2, 0, 0]} visible={false}>
+        <ringGeometry args={[0.8, 1, 32]} />
+        <meshBasicMaterial color="#00f0ff" transparent opacity={1} side={THREE.DoubleSide} />
+      </mesh>
     </group>
   );
 };
@@ -474,6 +595,8 @@ const Minimap = ({ bots, commanderPos }) => {
           <div className="map-room map-data" title="Data"></div>
           <div className="map-room map-strategy" title="Strategy"></div>
           <div className="map-room map-office" title="Office"></div>
+          <div className="map-room map-hangar" title="Hangar"></div>
+          <div className="map-room map-medbay" title="MedBay"></div>
 
           <div 
             className="map-dot commander-dot" 
@@ -489,6 +612,8 @@ const Minimap = ({ bots, commanderPos }) => {
             if (bot.location === 'data_forge') { x = 8; z = -8; }
             if (bot.location === 'strategy_deck') { x = -8; z = 8; }
             if (bot.location === 'office') { x = 8; z = 8; }
+            if (bot.location === 'hangar_bay') { x = 0; z = -14; }
+            if (bot.location === 'medbay') { x = 0; z = 14; }
             if (bot.bot_id === 'email_bot') x -= 2;
             if (bot.bot_id === 'data_bot') z -= 2;
             if (bot.bot_id === 'excel_bot') x += 2;
@@ -560,21 +685,21 @@ export default function App() {
     <div className="app-container">
       <div className="canvas-container">
         <Suspense fallback={<div style={{color: 'white', position: 'absolute', top: '50%', left: '50%'}}>Loading Ship...</div>}>
-          <Canvas camera={{ position: [0, 18, 22], fov: 40 }} shadows>
+          <Canvas camera={{ position: [0, 22, 26], fov: 40 }} shadows>
             <color attach="background" args={['#02040a']} />
             
             <ambientLight intensity={0.3} />
             <directionalLight position={[10, 20, 10]} intensity={1} castShadow shadow-mapSize={[2048, 2048]} />
             
             <WarpStars />
-            <Grid position={[0, -1, 0]} args={[50, 50]} cellSize={1} cellThickness={0.5} cellColor="#00f0ff" sectionSize={5} sectionThickness={1} sectionColor="#00f0ff" fadeDistance={30} fadeStrength={1} />
+            <Grid position={[0, -1, 0]} args={[60, 60]} cellSize={1} cellThickness={0.5} cellColor="#00f0ff" sectionSize={5} sectionThickness={1} sectionColor="#00f0ff" fadeDistance={30} fadeStrength={1} />
 
             <OrbitControls 
               makeDefault 
               maxPolarAngle={Math.PI / 2.5} 
               minPolarAngle={Math.PI / 4}
               minDistance={10} 
-              maxDistance={40} 
+              maxDistance={50} 
               enablePan={true}
             />
 
@@ -613,6 +738,15 @@ export default function App() {
             <Room position={[8, 0, 8]} size={[5, 1, 5]} color={ROOM_COLORS.office} label="Commander's Office">
               <OfficeMachinery position={[0, 0, -1]} />
               <Commander activeRoom={activeRoom} setActiveRoom={setActiveRoom} isPaused={!!openRoom} commanderPos={commanderPos} />
+            </Room>
+
+            {/* NEW ROOMS */}
+            <Room position={[0, 0, -14]} size={[6, 1, 5]} color={ROOM_COLORS.hangar_bay} label="Hangar Bay">
+              <HangarMachinery position={[0, 0, 0]} />
+            </Room>
+
+            <Room position={[0, 0, 14]} size={[6, 1, 5]} color={ROOM_COLORS.medbay} label="MedBay">
+              <MedbayMachinery position={[0, 0, 0]} />
             </Room>
 
             {Object.values(bots).map((bot) => (
@@ -704,6 +838,10 @@ export default function App() {
               </button>
             </div>
           </div>
+
+          <div style={{ fontSize: '10px', color: '#00f0ff', textAlign: 'center', marginTop: '10px' }}>
+            PRESS [SPACEBAR] TO SCAN
+          </div>
         </div>
       </div>
 
@@ -718,6 +856,8 @@ export default function App() {
               {openRoom === 'strategy_deck' && <p>Active reports: 2.</p>}
               {openRoom === 'bridge' && <p>Ship status: All systems nominal.</p>}
               {openRoom === 'office' && <p>Commander's personal logs.</p>}
+              {openRoom === 'hangar_bay' && <p>Shuttle is fueled and ready.</p>}
+              {openRoom === 'medbay' && <p>All crew vitals are normal.</p>}
             </div>
             <button className="close-btn" onClick={() => setOpenRoom(null)}>CLOSE TERMINAL [ESC]</button>
           </div>
