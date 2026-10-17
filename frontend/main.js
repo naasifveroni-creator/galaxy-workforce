@@ -248,7 +248,7 @@ new Phaser.Game({
       // 4. Add the Commander Avatar
       // ---------------------------------------------------------
       const startX = bx + (bw / 2);
-      const startY = by + (bh / 2);
+      const startY = by + bh - 40; 
       
       this.commander = this.add.sprite(startX, startY, 'commander', 4).setDepth(20).setScale(1.2);
       
