@@ -317,6 +317,90 @@ const MovingBot = ({ bot }) => {
   );
 };
 
+// --- NEW: COMBAT DRONE COMPONENT ---
+const CombatDrone = ({ position, commanderPos, bots }) => {
+  const droneRef = useRef();
+  const barrelRef = useRef();
+  const laserRef = useRef();
+  const [isFiring, setIsFiring] = useState(false);
+  
+  useFrame((state, delta) => {
+    if (!droneRef.current) return;
+
+    const time = state.clock.elapsedTime;
+    const orbitRadius = 2.5;
+    const targetX = commanderPos.x + Math.cos(time * 1.5 + position[0]) * orbitRadius;
+    const targetZ = commanderPos.z + Math.sin(time * 1.5 + position[2]) * orbitRadius;
+    
+    droneRef.current.position.lerp(new THREE.Vector3(targetX, 1.2 + Math.sin(time * 3) * 0.2, targetZ), 3 * delta);
+
+    let closestBot = null;
+    let minDist = 5;
+
+    bots.forEach(bot => {
+      let bx = 0, bz = 0;
+      if (bot.location === 'comms_array') { bx = -8; bz = -8; }
+      if (bot.location === 'data_forge') { bx = 8; bz = -8; }
+      if (bot.location === 'strategy_deck') { bx = -8; bz = 8; }
+      if (bot.location === 'office') { bx = 8; bz = 8; }
+      if (bot.location === 'hangar_bay') { bx = 0; bz = -14; }
+      if (bot.location === 'medbay') { bx = 0; bz = 14; }
+
+      const dx = droneRef.current.position.x - bx;
+      const dz = droneRef.current.position.z - bz;
+      const dist = Math.sqrt(dx*dx + dz*dz);
+
+      if (dist < minDist) {
+        minDist = dist;
+        closestBot = { x: bx, z: bz };
+      }
+    });
+
+    if (closestBot && barrelRef.current) {
+      const angle = Math.atan2(closestBot.x - droneRef.current.position.x, closestBot.z - droneRef.current.position.z);
+      barrelRef.current.rotation.y = angle;
+      
+      setIsFiring(true);
+      if (laserRef.current) {
+        laserRef.current.visible = true;
+        laserRef.current.scale.z = minDist;
+        laserRef.current.material.opacity = 0.5 + Math.random() * 0.5;
+      }
+    } else {
+      if (laserRef.current) laserRef.current.visible = false;
+      setIsFiring(false);
+    }
+  });
+
+  return (
+    <group ref={droneRef} position={position}>
+      <mesh>
+        <sphereGeometry args={[0.2, 16, 16]} />
+        <meshStandardMaterial color="#333" metalness={0.9} roughness={0.1} />
+      </mesh>
+      
+      <mesh position={[0, 0, 0.15]}>
+        <sphereGeometry args={[0.05]} />
+        <meshBasicMaterial color="#e74c3c" />
+      </mesh>
+
+      <group ref={barrelRef} position={[0, 0, 0]}>
+        <mesh position={[0, 0, 0.3]}>
+          <cylinderGeometry args={[0.05, 0.05, 0.6]} rotation={[Math.PI/2, 0, 0]} />
+          <meshStandardMaterial color="#111" />
+        </mesh>
+      </group>
+
+      <mesh ref={laserRef} position={[0, 0, 0]} visible={false}>
+        <boxGeometry args={[0.05, 0.05, 1]} />
+        <meshBasicMaterial color="#ff0000" transparent opacity={0.8} />
+      </mesh>
+
+      <pointLight color="#e74c3c" intensity={1} distance={2} />
+    </group>
+  );
+};
+
 // --- THE COMMANDER (COMBAT READY) ---
 const Commander = ({ activeRoom, setActiveRoom, isPaused, commanderPos }) => {
   const ref = useRef();
@@ -326,7 +410,6 @@ const Commander = ({ activeRoom, setActiveRoom, isPaused, commanderPos }) => {
   const scanTime = useRef(0);
   const targetPos = useRef(null);
   
-  // Combat State
   const [turrets, setTurrets] = useState([]);
   const shieldRef = useRef();
   const shieldTime = useRef(0);
@@ -364,7 +447,6 @@ const Commander = ({ activeRoom, setActiveRoom, isPaused, commanderPos }) => {
         }
       }
 
-      // NEW: F = SHIELD
       if (e.key.toLowerCase() === 'f') {
         if (shieldRef.current && shieldTime.current <= 0) {
           shieldTime.current = 3.0;
@@ -374,7 +456,6 @@ const Commander = ({ activeRoom, setActiveRoom, isPaused, commanderPos }) => {
         }
       }
 
-      // NEW: T = TURRET
       if (e.key.toLowerCase() === 't') {
         const newTurret = { 
           id: Date.now(), 
@@ -437,7 +518,6 @@ const Commander = ({ activeRoom, setActiveRoom, isPaused, commanderPos }) => {
       }
     }
 
-    // Shield Animation
     if (shieldTime.current > 0) {
       shieldTime.current -= delta;
       if (shieldRef.current) {
@@ -452,7 +532,6 @@ const Commander = ({ activeRoom, setActiveRoom, isPaused, commanderPos }) => {
 
   return (
     <>
-      {/* Holographic Platform */}
       <mesh ref={platformRef} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[0.8, 1.0, 6]} />
         <meshBasicMaterial color="#f1c40f" transparent opacity={0.6} side={THREE.DoubleSide} />
@@ -462,14 +541,12 @@ const Commander = ({ activeRoom, setActiveRoom, isPaused, commanderPos }) => {
         <Crewmate3D color="#f1c40f" name="COMMANDER" isCommander={true} />
         <pointLight color="#f1c40f" intensity={2} distance={4} position={[0, 0.5, 0]} />
         
-        {/* NEW: Combat Rifle */}
         <group position={[0.4, 0.2, -0.2]} rotation={[0, 0, -0.5]}>
           <mesh><boxGeometry args={[0.1, 0.1, 0.8]} /><meshStandardMaterial color="#333" metalness={0.9} /></mesh>
           <mesh position={[0, 0, 0.4]}><boxGeometry args={[0.05, 0.2, 0.1]} /><meshStandardMaterial color="#111" /></mesh>
           <pointLight color="#00f0ff" intensity={2} distance={1} position={[0, 0, 0.5]} />
         </group>
 
-        {/* NEW: Energy Shield Dome */}
         <mesh ref={shieldRef} visible={false}>
           <sphereGeometry args={[2.5, 32, 32]} />
           <meshBasicMaterial color="#00f0ff" transparent opacity={0.3} wireframe />
@@ -480,15 +557,8 @@ const Commander = ({ activeRoom, setActiveRoom, isPaused, commanderPos }) => {
         </mesh>
       </group>
 
-      {/* NEW: Render Deployed Turrets */}
       {turrets.map(turret => (
-        <group key={turret.id} position={turret.pos}>
-          <mesh><cylinderGeometry args={[0.2, 0.3, 0.2]} /><meshStandardMaterial color="#333" /></mesh>
-          <mesh position={[0, 0.2, 0]} rotation={[0, Date.now() % 6, 0]}>
-             <boxGeometry args={[0.1, 0.1, 0.4]} /><meshStandardMaterial color="#e74c3c" emissive="#e74c3c" />
-          </mesh>
-          <pointLight color="#e74c3c" intensity={1} distance={2} />
-        </group>
+        <CombatDrone key={turret.id} position={turret.pos} commanderPos={commanderPos.current} bots={Object.values(commanderPos.current.bots || {})} />
       ))}
     </>
   );
@@ -654,7 +724,6 @@ export default function App() {
               <button onClick={() => sendMessage({ type: "START_TASK", bot_id: 'report_bot' })}><span>▶ GENERATE REPORT</span></button>
             </div>
           </div>
-          
           <div>
             <h4>Commander Controls</h4>
             <div className="button-group" style={{ fontSize: '10px', color: '#8892b0', lineHeight: '1.6' }}>
@@ -663,7 +732,7 @@ export default function App() {
               <div>⚡ <strong>Hold Shift:</strong> Overclock Speed</div>
               <div>🔵 <strong>Spacebar:</strong> Tactical Scan</div>
               <div>🛡️ <strong>F Key:</strong> Activate Energy Shield</div>
-              <div>🔫 <strong>T Key:</strong> Deploy Combat Turret</div>
+              <div>🔫 <strong>T Key:</strong> Deploy Combat Drone</div>
             </div>
           </div>
         </div>
