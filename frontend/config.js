@@ -1,5 +1,5 @@
 // Shared map config. Room IDs MUST match backend/core/registry.py ROOMS.
-const WS_URL = "ws://localhost:8000/ws";
+const WS_URL = "wss://orange-system-g4w4gq7r9gxxcw7q-8000.app.github.dev/ws";
 const TILE = 80;
 
 // Grid-based layout: col/row/w/h are in tiles.
