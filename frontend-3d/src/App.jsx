@@ -23,7 +23,74 @@ const ROOM_POSITIONS = {
   office: { x: 8, z: 8, label: "Commander's Office" }
 };
 
-// --- MACHINERY (Keep as is) ---
+// --- WARP SPEED STARFIELD ---
+const WarpStars = () => {
+  const pointsRef = useRef();
+  // Generate 1000 stars stretched into lines
+  const positions = React.useMemo(() => {
+    const pos = new Float32Array(3000);
+    for (let i = 0; i < 3000; i += 3) {
+      pos[i] = (Math.random() - 0.5) * 100;     
+      pos[i + 1] = (Math.random() - 0.5) * 100;          
+      pos[i + 2] = (Math.random() - 0.5) * 100; 
+    }
+    return pos;
+  }, []);
+
+  useFrame((state, delta) => {
+    if (pointsRef.current) {
+      // Move stars towards the camera slowly
+      pointsRef.current.position.z += delta * 2;
+      // Reset position if it goes too far
+      if (pointsRef.current.position.z > 50) pointsRef.current.position.z = -50;
+    }
+  });
+
+  return (
+    <points ref={pointsRef}>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" count={1000} array={positions} itemSize={3} />
+      </bufferGeometry>
+      <pointsMaterial size={0.15} color="#ffffff" transparent opacity={0.4} sizeAttenuation />
+    </points>
+  );
+};
+
+// --- FLOATING 3D STAT BAR ---
+const FloatingStatBar = ({ position, label, color, width = 1.5 }) => {
+  const fillRef = useRef();
+  
+  useFrame((state) => {
+    if (fillRef.current) {
+      // Animate the bar randomly to look like active data
+      const scale = 0.5 + Math.sin(state.clock.elapsedTime * 2) * 0.3 + Math.random() * 0.1;
+      fillRef.current.scale.x = scale;
+      fillRef.current.position.x = -(width / 2) + (width * scale) / 2;
+    }
+  });
+
+  return (
+    <group position={position}>
+      <Html center position={[0, 0.3, 0]}>
+        <div style={{ color: color, fontFamily: 'Orbitron', fontSize: '8px', whiteSpace: 'nowrap', textShadow: '1px 1px 2px #000' }}>
+          {label}
+        </div>
+      </Html>
+      {/* Background Bar */}
+      <mesh position={[0, 0, 0]}>
+        <planeGeometry args={[width, 0.1]} />
+        <meshBasicMaterial color="#111" transparent opacity={0.8} />
+      </mesh>
+      {/* Animated Fill Bar */}
+      <mesh ref={fillRef} position={[0, 0, 0.01]}>
+        <planeGeometry args={[width, 0.1]} />
+        <meshBasicMaterial color={color} />
+      </mesh>
+    </group>
+  );
+};
+
+// --- MACHINERY ---
 const CommandTable = ({ position }) => {
   const ref = useRef();
   useFrame((state, delta) => (ref.current.rotation.y += delta * 0.5));
@@ -41,6 +108,7 @@ const CommandTable = ({ position }) => {
         <meshStandardMaterial color="#00f0ff" emissive="#00f0ff" emissiveIntensity={2} wireframe transparent opacity={0.8} />
       </mesh>
       <pointLight color="#00f0ff" intensity={3} distance={6} position={[0, 0.5, 0]} />
+      <FloatingStatBar position={[0, 1.5, 0]} label="SHIP POWER" color="#00f0ff" />
     </group>
   );
 };
@@ -72,6 +140,7 @@ const DataForgeCore = ({ position }) => {
         <meshStandardMaterial color="#051420" metalness={0.9} />
       </mesh>
       <pointLight color="#00f0ff" intensity={2} distance={6} />
+      <FloatingStatBar position={[0, 2, 0]} label="DATA STREAM" color="#00f0ff" />
     </group>
   );
 };
@@ -105,6 +174,7 @@ const CommsMachinery = ({ position }) => {
         </mesh>
       </group>
       <pointLight color="#ff0000" intensity={2} distance={5} position={[0, 1, -1]} />
+      <FloatingStatBar position={[0, 2.5, 0]} label="SIGNAL STRENGTH" color="#ff4d4d" />
     </group>
   );
 };
@@ -133,6 +203,7 @@ const StrategyMachinery = ({ position }) => {
         </Box>
       </group>
       <pointLight color="#2ecc71" intensity={3} distance={6} position={[0, 1.5, 0]} />
+      <FloatingStatBar position={[0, 2.5, 0]} label="REVENUE TARGET" color="#2ecc71" />
     </group>
   );
 };
@@ -189,48 +260,35 @@ const Room = ({ position, size, color, label, children }) => {
   );
 };
 
-// --- REAL 3D AMONG US CHARACTER (Now with movable legs) ---
+// --- REAL 3D AMONG US CHARACTER ---
 const Crewmate3D = ({ color, name, status, isCommander, refs }) => {
   return (
     <group>
-      {/* Body */}
       <mesh ref={refs?.body} castShadow>
         <capsuleGeometry args={[0.35, 0.5, 8, 16]} />
         <meshStandardMaterial color={color} roughness={0.4} metalness={0.2} />
       </mesh>
-      
-      {/* Backpack */}
       <RoundedBox args={[0.3, 0.4, 0.2]} position={[-0.35, 0, 0]} radius={0.05}>
         <meshStandardMaterial color={color} roughness={0.4} metalness={0.2} />
       </RoundedBox>
-      
-      {/* Visor */}
       <RoundedBox args={[0.45, 0.25, 0.2]} position={[0.15, 0.25, 0.25]} radius={0.1}>
         <meshStandardMaterial color="#888" roughness={0.2} metalness={0.9} />
       </RoundedBox>
       <RoundedBox args={[0.4, 0.2, 0.15]} position={[0.15, 0.25, 0.35]} radius={0.08}>
         <meshStandardMaterial color="#87ceeb" emissive="#87ceeb" emissiveIntensity={0.8} transparent opacity={0.9} roughness={0.1} metalness={0.8} />
       </RoundedBox>
-      
-      {/* Left Leg */}
       <mesh ref={refs?.leftLeg} position={[-0.15, -0.5, 0]}>
         <cylinderGeometry args={[0.1, 0.1, 0.3]} />
         <meshStandardMaterial color={color} />
       </mesh>
-      
-      {/* Right Leg */}
       <mesh ref={refs?.rightLeg} position={[0.15, -0.5, 0]}>
         <cylinderGeometry args={[0.1, 0.1, 0.3]} />
         <meshStandardMaterial color={color} />
       </mesh>
-      
-      {/* Glow Ring */}
       <mesh position={[0, -0.65, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[0.4, 0.5, 32]} />
         <meshBasicMaterial color={isCommander ? "#f1c40f" : color} transparent opacity={0.8} />
       </mesh>
-      
-      {/* Text Label */}
       <Html position={[0, 1.2, 0]} center>
         <div style={{ color: isCommander ? '#f1c40f' : '#fff', fontFamily: 'Orbitron', fontSize: '10px', whiteSpace: 'nowrap', textShadow: '1px 1px 3px #000', textAlign: 'center', fontWeight: 'bold' }}>
           {name}
@@ -241,7 +299,7 @@ const Crewmate3D = ({ color, name, status, isCommander, refs }) => {
   );
 };
 
-// --- WALKING BOT COMPONENT (Now with actual leg animations) ---
+// --- WALKING BOT COMPONENT ---
 const MovingBot = ({ bot }) => {
   const groupRef = useRef();
   const leftLegRef = useRef();
@@ -280,37 +338,27 @@ const MovingBot = ({ bot }) => {
     const distance = groupRef.current.position.distanceTo(targetPos.current);
     
     if (distance > 0.05) {
-      // 1. Move towards target
       groupRef.current.position.lerp(targetPos.current, 3 * delta);
       
-      // 2. Rotate to face direction
       const angle = Math.atan2(
         targetPos.current.x - groupRef.current.position.x,
         targetPos.current.z - groupRef.current.position.z
       );
       groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, angle, 8 * delta);
 
-      // 3. Trigger walk animation
-      walkTime.current += delta * 12; // Speed of leg swings
-      
-      const swing = Math.sin(walkTime.current) * 0.4; // Leg rotation amount
+      walkTime.current += delta * 12;
+      const swing = Math.sin(walkTime.current) * 0.4;
       
       if (leftLegRef.current && rightLegRef.current && bodyRef.current) {
-        // Legs swing forward and backward
         leftLegRef.current.rotation.x = swing;
         rightLegRef.current.rotation.x = -swing;
-        
-        // Body bobs up and down slightly (2x the speed of legs)
         bodyRef.current.position.y = Math.abs(Math.sin(walkTime.current)) * 0.05;
       }
       
     } else {
-      // Stop and reset to idle
       groupRef.current.position.copy(targetPos.current);
       if (isWalking.current) {
         isWalking.current = false;
-        
-        // Reset legs and body
         if (leftLegRef.current && rightLegRef.current && bodyRef.current) {
           leftLegRef.current.rotation.x = 0;
           rightLegRef.current.rotation.x = 0;
@@ -490,6 +538,8 @@ export default function App() {
             <ambientLight intensity={0.3} />
             <directionalLight position={[10, 20, 10]} intensity={1} castShadow shadow-mapSize={[2048, 2048]} />
             
+            {/* Replaced standard grid with Warp Stars for background */}
+            <WarpStars />
             <Grid position={[0, -1, 0]} args={[50, 50]} cellSize={1} cellThickness={0.5} cellColor="#00f0ff" sectionSize={5} sectionThickness={1} sectionColor="#00f0ff" fadeDistance={30} fadeStrength={1} />
 
             <OrbitControls makeDefault maxPolarAngle={Math.PI / 2.2} minDistance={10} maxDistance={40} />
