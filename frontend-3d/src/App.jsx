@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Box, Grid, Text, Html } from '@react-three/drei';
 import useWebSocket from 'react-use-websocket';
@@ -21,6 +21,7 @@ const BOT_COLORS = {
   report_bot: '#00ff00'
 };
 
+// 3D Room Component
 const Room = ({ position, size, color, label }) => {
   return (
     <group position={position}>
@@ -39,6 +40,7 @@ const Room = ({ position, size, color, label }) => {
   );
 };
 
+// 3D Bot Component
 const Bot = ({ position, color, name, status }) => {
   return (
     <group position={position}>
@@ -67,8 +69,8 @@ export default function App() {
   const [bots, setBots] = useState({});
   const [approvals, setApprovals] = useState([]);
 
-  const { sendJsonMessage, lastJsonMessage, readyState } = useWebSocket(WS_URL, {
-    shouldReconnect: (closeEvent) => true,
+  const { sendJsonMessage, lastJsonMessage } = useWebSocket(WS_URL, {
+    shouldReconnect: () => true,
   });
 
   useEffect(() => {
@@ -98,7 +100,7 @@ export default function App() {
   };
 
   const resolveApproval = (taskId, isApproved) => {
-    // THE FIX IS HERE ON THIS LINE
+    // Fixed the syntax error here
     sendJsonMessage({ 
       type: isApproved ? 'APPROVE_ACTION' : 'REJECT_ACTION', 
       task_id: taskId 
@@ -109,57 +111,60 @@ export default function App() {
     <div className="app-container">
       
       <div className="canvas-container">
-        <Canvas camera={{ position: [0, 15, 20], fov: 45 }}>
-          <color attach="background" args={['#02040a']} />
-          
-          <ambientLight intensity={0.5} />
-          <directionalLight position={[10, 10, 5]} intensity={1} />
-          <pointLight position={[0, 5, 0]} intensity={2} color="#00f0ff" />
-
-          <Grid 
-            position={[0, -1, 0]} 
-            args={[50, 50]} 
-            cellSize={1} 
-            cellThickness={0.5} 
-            cellColor="#00f0ff" 
-            sectionSize={5} 
-            sectionThickness={1} 
-            sectionColor="#00f0ff" 
-            fadeDistance={30} 
-            fadeStrength={1} 
-          />
-
-          <OrbitControls makeDefault />
-
-          <Room position={[0, 0, 0]} size={[8, 1, 6]} color={ROOM_COLORS.bridge} label="Bridge (HQ)" />
-          <Room position={[-8, 0, -8]} size={[5, 1, 5]} color={ROOM_COLORS.comms_array} label="Comms Array" />
-          <Room position={[8, 0, -8]} size={[5, 1, 5]} color={ROOM_COLORS.data_forge} label="Data Forge" />
-          <Room position={[-8, 0, 8]} size={[5, 1, 5]} color={ROOM_COLORS.strategy_deck} label="Strategy Deck" />
-          <Room position={[8, 0, 8]} size={[5, 1, 5]} color={ROOM_COLORS.office} label="Commander's Office" />
-
-          {Object.values(bots).map((bot) => {
-            let x = 0, z = 0;
-            if (bot.location === 'comms_array') { x = -8; z = -8; }
-            if (bot.location === 'data_forge') { x = 8; z = -8; }
-            if (bot.location === 'strategy_deck') { x = -8; z = 8; }
-            if (bot.location === 'office') { x = 8; z = 8; }
+        {/* Suspense is required to prevent black screens while loading 3D assets */}
+        <Suspense fallback={<div style={{color: 'white', position: 'absolute', top: '50%', left: '50%'}}>Loading Ship...</div>}>
+          <Canvas camera={{ position: [0, 15, 20], fov: 45 }}>
+            <color attach="background" args={['#02040a']} />
             
-            if (bot.bot_id === 'email_bot') x -= 1;
-            if (bot.bot_id === 'data_bot') z -= 1;
-            if (bot.bot_id === 'excel_bot') x += 1;
-            if (bot.bot_id === 'report_bot') z += 1;
+            <ambientLight intensity={0.5} />
+            <directionalLight position={[10, 10, 5]} intensity={1} />
+            <pointLight position={[0, 5, 0]} intensity={2} color="#00f0ff" />
 
-            return (
-              <Bot 
-                key={bot.bot_id}
-                position={[x, 0.6, z]} 
-                color={BOT_COLORS[bot.bot_id]} 
-                name={bot.name} 
-                status={bot.status}
-              />
-            );
-          })}
-        </Canvas>
+            <Grid 
+              position={[0, -1, 0]} 
+              args={[50, 50]} 
+              cellSize={1} 
+              cellThickness={0.5} 
+              cellColor="#00f0ff" 
+              sectionSize={5} 
+              sectionThickness={1} 
+              sectionColor="#00f0ff" 
+              fadeDistance={30} 
+              fadeStrength={1} 
+            />
+
+            <OrbitControls makeDefault />
+
+            <Room position={[0, 0, 0]} size={[8, 1, 6]} color={ROOM_COLORS.bridge} label="Bridge (HQ)" />
+            <Room position={[-8, 0, -8]} size={[5, 1, 5]} color={ROOM_COLORS.comms_array} label="Comms Array" />
+            <Room position={[8, 0, -8]} size={[5, 1, 5]} color={ROOM_COLORS.data_forge} label="Data Forge" />
+            <Room position={[-8, 0, 8]} size={[5, 1, 5]} color={ROOM_COLORS.strategy_deck} label="Strategy Deck" />
+            <Room position={[8, 0, 8]} size={[5, 1, 5]} color={ROOM_COLORS.office} label="Commander's Office" />
+
+            {Object.values(bots).map((bot) => {
+              let x = 0, z = 0;
+              if (bot.location === 'comms_array') { x = -8; z = -8; }
+              if (bot.location === 'data_forge') { x = 8; z = -8; }
+              if (bot.location === 'strategy_deck') { x = -8; z = 8; }
+              if (bot.location === 'office') { x = 8; z = 8; }
+              
+              if (bot.bot_id === 'email_bot') x -= 1;
+              if (bot.bot_id === 'data_bot') z -= 1;
+              if (bot.bot_id === 'excel_bot') x += 1;
+              if (bot.bot_id === 'report_bot') z += 1;
+
+              return (
+                <Bot 
+                  key={bot.bot_id}
+                  position={[x, 0.6, z]} 
+                  color={BOT_COLORS[bot.bot_id]} 
+                  name={bot.name} 
+                  status={bot.status}
+                />
+              );
+            })}
+          </Canvas>
+        </Suspense>
       </div>
 
       <div className="hud-panel">
