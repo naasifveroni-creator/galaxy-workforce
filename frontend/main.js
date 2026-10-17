@@ -77,12 +77,11 @@ function ensureBot(b) {
   if (bots[b.bot_id]) return;
   const p = roomCenter(b.location || "bridge", b.bot_id);
   
-  // 1. Create the sprite
   const container = scene.add.container(p.x, p.y).setDepth(10);
   const g = scene.add.graphics();
   const color = BOT_COLORS[b.bot_id] || 0xffffff;
   
-  // 2. Draw the Among Us character
+  // Draw the Among Us character
   g.fillStyle(color, 1);
   g.fillRoundedRect(-12, -16, 24, 32, 8);
   g.fillRoundedRect(-18, -6, 10, 18, 4);
@@ -125,7 +124,6 @@ function applyBotStatus(msg, instant = false) {
   }
 }
 
-// ---------- Phaser with Sprite Loading ----------
 new Phaser.Game({
   type: Phaser.AUTO,
   parent: "game",
@@ -133,36 +131,51 @@ new Phaser.Game({
   backgroundColor: "#05060f",
   scene: {
     preload() {
-      // Load the Commander avatar (using a reliable Phaser asset)
       this.load.spritesheet('commander', 'https://labs.phaser.io/assets/sprites/dude.png', { frameWidth: 32, frameHeight: 48 });
     },
     create() {
       scene = this;
 
-      const g = this.add.graphics().lineStyle(1, 0x121a33);
+      // 1. Draw the Starfield Background
+      const stars = this.add.graphics();
+      for (let i = 0; i < 100; i++) {
+        stars.fillStyle(0xffffff, Math.random() * 0.8 + 0.2);
+        stars.fillCircle(Math.random() * 960, Math.random() * 640, Math.random() * 1.5);
+      }
+
+      // 2. Draw the Grid
+      const g = this.add.graphics().lineStyle(1, 0x121a33, 0.5);
       for (let x = 0; x <= 12; x++) g.lineBetween(x * TILE, 0, x * TILE, 8 * TILE);
       for (let y = 0; y <= 8; y++)  g.lineBetween(0, y * TILE, 12 * TILE, y * TILE);
       
+      // 3. Draw the Rooms with Glowing Borders
       Object.values(ROOMS).forEach(r => {
-        this.add.rectangle(r.col * TILE, r.row * TILE, r.w * TILE, r.h * TILE, r.color, 0.85)
+        const rect = this.add.rectangle(r.col * TILE, r.row * TILE, r.w * TILE, r.h * TILE, r.color, 0.85)
           .setOrigin(0).setStrokeStyle(2, 0x8899cc);
+          
+        // Add a glowing pulse to the rooms
+        this.tweens.add({
+          targets: rect,
+          alpha: 0.6,
+          yoyo: true,
+          repeat: -1,
+          duration: 2000 + Math.random() * 1000
+        });
+
         this.add.text(r.col * TILE + 8, r.row * TILE + 6, r.label, { fontSize: "13px", color: "#fff" });
       });
 
-      // --- ADD THE COMMANDER AVATAR ---
-      // Spawn the commander in the center of the Bridge
+      // 4. Add the Commander Avatar
       const bridge = ROOMS['bridge'];
       const startX = (bridge.col + bridge.w / 2) * TILE;
       const startY = (bridge.row + bridge.h / 2) * TILE;
       
       this.commander = this.add.sprite(startX, startY, 'commander', 4).setDepth(20).setScale(1.2);
       
-      // Add a label above the Commander
       this.commanderLabel = this.add.text(startX, startY - 40, "COMMANDER", { 
         fontSize: "12px", color: "#f1c40f", fontWeight: "bold", stroke: "#000", strokeThickness: 3 
       }).setOrigin(0.5).setDepth(21);
 
-      // Create animations for the commander
       this.anims.create({
         key: 'left',
         frames: this.anims.generateFrameNumbers('commander', { start: 0, end: 3 }),
@@ -181,49 +194,83 @@ new Phaser.Game({
         repeat: -1
       });
 
-      // --- KEYBOARD CONTROLS ---
+      // 5. Commander Abilities: The Scanner
+      this.scanner = this.add.circle(startX, startY, 10, 0x4da6ff, 0.5).setDepth(15);
+      this.scanner.setVisible(false);
+      this.scanTween = null;
+
+      this.input.keyboard.on('keydown-SPACE', () => {
+        // Play the scanner effect
+        this.scanner.setPosition(this.commander.x, this.commander.y);
+        this.scanner.setRadius(10);
+        this.scanner.setVisible(true);
+        
+        if (this.scanTween) this.scanTween.stop();
+        
+        this.scanTween = this.tweens.add({
+          targets: this.scanner,
+          radius: 300,
+          alpha: 0,
+          duration: 1000,
+          ease: 'Quad.easeOut',
+          onComplete: () => {
+            this.scanner.setVisible(false);
+            this.scanner.setAlpha(0.5);
+          }
+        });
+
+        // Light up the rooms briefly
+        Object.keys(ROOMS).forEach(roomId => {
+          if (bots[roomId]) {
+            // Flash the label of any bot in this room
+            const bot = bots[roomId];
+            this.tweens.add({
+              targets: bot.label,
+              color: '#f1c40f',
+              yoyo: true,
+              repeat: 3,
+              duration: 200
+            });
+          }
+        });
+      });
+
+      // 6. Keyboard Controls
       this.cursors = this.input.keyboard.createCursorKeys();
       this.wasd = this.input.keyboard.addKeys('W,A,S,D');
 
       connect(); 
     },
     update() {
-      // If the commander doesn't exist yet, do nothing
       if (!this.commander) return;
 
       const speed = 3;
       let moving = false;
 
-      // Left
       if (this.cursors.left.isDown || this.wasd.A.isDown) {
         this.commander.x -= speed;
         this.commander.play('left', true);
         moving = true;
       }
-      // Right
       else if (this.cursors.right.isDown || this.wasd.D.isDown) {
         this.commander.x += speed;
         this.commander.play('right', true);
         moving = true;
       }
 
-      // Up
       if (this.cursors.up.isDown || this.wasd.W.isDown) {
         this.commander.y -= speed;
         moving = true;
       }
-      // Down
       else if (this.cursors.down.isDown || this.wasd.S.isDown) {
         this.commander.y += speed;
         moving = true;
       }
 
-      // If not moving, play the idle 'turn' frame
       if (!moving) {
         this.commander.play('turn', true);
       }
 
-      // Make the label follow the commander
       this.commanderLabel.x = this.commander.x;
       this.commanderLabel.y = this.commander.y - 40;
     }
