@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap');
 
 * {
-  box-sizing: border-box; /* Forces padding to stay inside the width */
+  box-sizing: border-box !important;
 }
 
 body {
@@ -25,29 +25,19 @@ body {
   min-width: 0;
 }
 
-.canvas-container::after {
-  content: " ";
-  display: block;
-  position: absolute;
-  top: 0; left: 0; bottom: 0; right: 0;
-  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
-  background-size: 100% 4px;
-  pointer-events: none;
-  z-index: 10;
-}
-
-/* THE HUD */
+/* HUD PANEL - LOCKED TO 280PX */
 .hud-panel {
-  width: 320px !important;
-  min-width: 320px !important;
-  max-width: 320px !important;
-  flex-shrink: 0;
+  width: 280px !important;
+  min-width: 280px !important;
+  max-width: 280px !important;
   background: #060a12;
   border-left: 2px solid rgba(0, 240, 255, 0.2);
+  display: flex;
+  flex-direction: column;
   z-index: 100;
   box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
   transition: width 0.3s ease, min-width 0.3s ease;
-  overflow: hidden; /* Hides anything that tries to escape the 320px box */
+  overflow: hidden;
 }
 
 .hud-panel.collapsed {
@@ -59,27 +49,26 @@ body {
 .hud-content {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 10px;
   width: 100%;
   height: 100%;
-  padding: 15px;
+  padding: 10px;
   overflow-y: auto;
   overflow-x: hidden;
 }
 
-/* Header */
 .system-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid rgba(0, 240, 255, 0.2);
-  padding-bottom: 10px;
+  padding-bottom: 8px;
   width: 100%;
 }
 
 .logo-text {
   font-family: 'Orbitron', sans-serif;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 900;
   color: #00f0ff;
   white-space: nowrap;
@@ -91,17 +80,24 @@ body {
   color: #00f0ff;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
-  padding: 2px 8px;
-  flex-shrink: 0;
+  font-size: 12px;
+  padding: 2px 6px;
 }
 
-/* Profile */
+h4 {
+  margin: 0 0 6px 0;
+  font-family: 'Share Tech Mono', monospace;
+  color: #8892b0;
+  font-size: 9px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
 .profile-card {
   background: rgba(0, 240, 255, 0.05);
   border: 1px solid rgba(0, 240, 255, 0.3);
   border-radius: 4px;
-  padding: 10px;
+  padding: 8px;
   width: 100%;
 }
 
@@ -109,7 +105,7 @@ body {
   background: #000;
   height: 4px;
   border-radius: 2px;
-  margin-top: 8px;
+  margin-top: 6px;
   width: 100%;
   overflow: hidden;
 }
@@ -120,28 +116,18 @@ body {
   box-shadow: 0 0 10px #00f0ff;
 }
 
-/* Text */
-h4 {
-  margin: 0 0 8px 0;
-  font-family: 'Share Tech Mono', monospace;
-  color: #8892b0;
-  font-size: 10px;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-/* Telemetry */
+/* TELEMETRY GRID */
 .telemetry-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px;
+  gap: 4px;
   width: 100%;
 }
 
 .telemetry-box {
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 8px;
+  padding: 6px;
   border-radius: 4px;
   width: 100%;
   overflow: hidden;
@@ -149,53 +135,47 @@ h4 {
 
 .telem-label {
   font-family: 'Share Tech Mono', monospace;
-  font-size: 8px;
+  font-size: 7px;
   color: #4a5568;
   white-space: nowrap;
 }
 
 .telem-value {
   font-family: 'Share Tech Mono', monospace;
-  font-size: 11px;
+  font-size: 10px;
   color: #00f0ff;
   margin-top: 2px;
   white-space: nowrap;
 }
 
-/* Bot Matrix */
+/* BOT MATRIX */
 .bot-matrix {
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 4px;
-  padding: 6px;
+  padding: 4px;
   width: 100%;
 }
 
 .bot-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 0;
+  gap: 6px;
+  padding: 3px 0;
   border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
   width: 100%;
 }
 .bot-row:last-child { border-bottom: none; }
 
 .status-indicator {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   flex-shrink: 0;
 }
 
-.status-indicator.idle { background: #4a5568; }
-.status-indicator.walking { background: #f1c40f; box-shadow: 0 0 8px #f1c40f; }
-.status-indicator.working { background: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
-.status-indicator.awaiting_approval { background: #e74c3c; box-shadow: 0 0 10px #e74c3c; }
-.status-indicator.offline { background: #111; }
-
 .bot-name {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   text-transform: capitalize;
   flex: 1;
@@ -206,17 +186,16 @@ h4 {
 
 .bot-state {
   font-family: 'Share Tech Mono', monospace;
-  font-size: 9px;
+  font-size: 8px;
   color: #8892b0;
-  text-transform: uppercase;
   flex-shrink: 0;
 }
 
-/* Buttons */
+/* BUTTONS */
 .button-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   width: 100%;
 }
 
@@ -224,11 +203,11 @@ h4 {
   background: rgba(0, 240, 255, 0.05);
   color: #00f0ff;
   border: 1px solid rgba(0, 240, 255, 0.3);
-  padding: 8px;
+  padding: 6px;
   border-radius: 4px;
   cursor: pointer;
   font-family: 'Share Tech Mono', monospace;
-  font-size: 11px;
+  font-size: 10px;
   text-align: left;
   width: 100%;
   white-space: nowrap;
@@ -236,44 +215,35 @@ h4 {
   text-overflow: ellipsis;
 }
 
-/* Approvals */
+/* APPROVALS */
 .approval-card {
   background: rgba(15, 20, 30, 0.9);
   border-left: 3px solid #f1c40f;
-  padding: 10px;
+  padding: 8px;
   border-radius: 4px;
-  margin-bottom: 8px;
-  font-size: 11px;
+  margin-bottom: 6px;
+  font-size: 10px;
   width: 100%;
 }
 
 .row {
   display: flex;
-  gap: 6px;
-  margin-top: 10px;
+  gap: 4px;
+  margin-top: 8px;
   width: 100%;
 }
 
 .approve, .reject {
   flex: 1;
   text-align: center;
-  padding: 6px;
-  font-size: 10px;
+  padding: 4px;
+  font-size: 9px;
 }
 .approve { background: rgba(46, 204, 113, 0.1); border: 1px solid #2ecc71; color: #2ecc71; }
 .reject { background: rgba(231, 76, 60, 0.1); border: 1px solid #e74c3c; color: #e74c3c; }
 
-/* Minimap */
-.minimap-container {
-  position: absolute;
-  bottom: 20px;
-  left: 20px;
-  background: rgba(2, 4, 10, 0.85);
-  border: 1px solid rgba(0, 240, 255, 0.3);
-  border-radius: 8px;
-  z-index: 50;
-}
-
+/* MINIMAP (Keep as is) */
+.minimap-container { position: absolute; bottom: 20px; left: 20px; background: rgba(2, 4, 10, 0.85); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 8px; z-index: 50; }
 .minimap-container.expanded { width: 180px; height: 200px; padding: 10px; }
 .minimap-container.minimized { width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center; }
 .minimap-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; height: 20px; }
@@ -289,7 +259,7 @@ h4 {
 .map-dot { position: absolute; width: 6px; height: 6px; border-radius: 50%; transform: translate(-50%, -50%); }
 .commander-dot { background-color: #f1c40f; box-shadow: 0 0 8px #f1c40f; z-index: 10; width: 8px; height: 8px; }
 
-/* Modal */
+/* MODAL */
 .room-modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(2, 4, 10, 0.8); display: flex; justify-content: center; align-items: center; z-index: 1000; }
 .room-modal { background: #0a0f1e; border: 2px solid #00f0ff; border-radius: 8px; padding: 30px; width: 500px; color: #fff; }
 .room-modal h2 { font-family: 'Orbitron', sans-serif; color: #00f0ff; margin-top: 0; }
