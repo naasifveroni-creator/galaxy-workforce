@@ -1,7 +1,16 @@
 """Holds every bot + the map's room list. Add a bot/room here and the whole stack picks it up."""
 
 # Keep these IDs in sync with frontend/config.js
-ROOMS = ["bridge", "comms_array", "data_forge", "strategy_deck"]
+ROOMS = [
+    "bridge", 
+    "comms_array", 
+    "data_forge", 
+    "strategy_deck", 
+    "office", 
+    "hangar_bay", 
+    "medbay", 
+    "presentation_suite"
+]
 
 
 class Registry:
