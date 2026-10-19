@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Box, Grid, Text, Html, RoundedBox } from '@react-three/drei';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { OrbitControls, Box, Text, Html, RoundedBox, Sphere } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import './App.css';
@@ -8,11 +8,14 @@ import './App.css';
 const WS_URL = "wss://orange-system-g4w4gq7r9gxxcw7q-8000.app.github.dev/ws";
 
 const ROOM_COLORS = {
-  bridge: '#1e293b', comms_array: '#451a1a', data_forge: '#0f3a4d', strategy_deck: '#1a3d1a', office: '#3b2b4d', hangar_bay: '#2c3e50', medbay: '#4a235a'
+  bridge: '#1e293b', comms_array: '#451a1a', data_forge: '#0f3a4d', strategy_deck: '#1a3d1a', office: '#3b2b4d', hangar_bay: '#2c3e50', medbay: '#4a235a', presentation_suite: '#7d3c98'
 };
 
 const BOT_COLORS = {
-  email_bot: '#ff0000', data_bot: '#ffff00', excel_bot: '#0000ff', report_bot: '#00ff00'
+  data_bot: '#ffff00', 
+  excel_bot: '#0000ff', 
+  report_bot: '#00ff00',
+  ppt_bot: '#f39c12' 
 };
 
 const ROOM_POSITIONS = {
@@ -22,17 +25,19 @@ const ROOM_POSITIONS = {
   strategy_deck: { x: -8, z: 8, label: "Strategy Deck" },
   office: { x: 8, z: 8, label: "Commander's Office" },
   hangar_bay: { x: 0, z: -14, label: "Hangar Bay" },
-  medbay: { x: 0, z: 14, label: "MedBay" }
+  medbay: { x: 0, z: 14, label: "MedBay" },
+  presentation_suite: { x: -14, z: 0, label: "Presentation Suite" }
 };
 
+// --- SPACE ECOSYSTEM ---
 const WarpStars = () => {
   const pointsRef = useRef();
   const positions = React.useMemo(() => {
     const pos = new Float32Array(3000);
     for (let i = 0; i < 3000; i += 3) {
-      pos[i] = (Math.random() - 0.5) * 100;     
-      pos[i + 1] = (Math.random() - 0.5) * 100;          
-      pos[i + 2] = (Math.random() - 0.5) * 100; 
+      pos[i] = (Math.random() - 0.5) * 200;     
+      pos[i + 1] = (Math.random() - 0.5) * 200;          
+      pos[i + 2] = (Math.random() - 0.5) * 200; 
     }
     return pos;
   }, []);
@@ -40,7 +45,7 @@ const WarpStars = () => {
   useFrame((state, delta) => {
     if (pointsRef.current) {
       pointsRef.current.position.z += delta * 2;
-      if (pointsRef.current.position.z > 50) pointsRef.current.position.z = -50;
+      if (pointsRef.current.position.z > 100) pointsRef.current.position.z = -100;
     }
   });
 
@@ -49,11 +54,70 @@ const WarpStars = () => {
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" count={1000} array={positions} itemSize={3} />
       </bufferGeometry>
-      <pointsMaterial size={0.15} color="#ffffff" transparent opacity={0.4} sizeAttenuation />
+      <pointsMaterial size={0.2} color="#ffffff" transparent opacity={0.6} sizeAttenuation />
     </points>
   );
 };
 
+const BackgroundPlanet = () => {
+  const planetRef = useRef();
+  useFrame((state, delta) => {
+    if (planetRef.current) planetRef.current.rotation.y += delta * 0.02;
+  });
+
+  return (
+    <group position={[-40, -10, -60]}>
+      <mesh ref={planetRef}>
+        <sphereGeometry args={[25, 64, 64]} />
+        <meshStandardMaterial color="#1e3a8a" emissive="#0f172a" roughness={0.8} />
+      </mesh>
+      <mesh>
+        <sphereGeometry args={[25.5, 64, 64]} />
+        <meshBasicMaterial color="#00f0ff" transparent opacity={0.1} side={THREE.BackSide} />
+      </mesh>
+      <pointLight color="#00f0ff" intensity={5} distance={100} />
+    </group>
+  );
+};
+
+const EngineThrusters = () => {
+  return (
+    <group position={[0, -0.5, -20]}>
+      {[-3, 0, 3].map((x, i) => (
+        <group key={i} position={[x, 0, 0]}>
+          <mesh rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.5, 0.8, 4]} />
+            <meshBasicMaterial color="#00f0ff" transparent opacity={0.6} />
+          </mesh>
+          <pointLight color="#00f0ff" intensity={5} distance={10} position={[0, 0, -2]} />
+        </group>
+      ))}
+    </group>
+  );
+};
+
+const ShipHull = () => {
+  return (
+    <group position={[0, -0.8, 0]}>
+      <Box args={[34, 0.5, 40]} position={[0, 0, 0]}>
+        <meshStandardMaterial color="#0a0f1a" metalness={0.9} roughness={0.4} />
+      </Box>
+      <Box args={[34.2, 0.1, 40.2]} position={[0, 0, 0]}>
+        <meshBasicMaterial color="#334155" wireframe />
+      </Box>
+      
+      <Box args={[2, 0.1, 8]} position={[-4, 0.3, -4]} rotation={[0, Math.PI/4, 0]}><meshStandardMaterial color="#00f0ff" transparent opacity={0.2} /></Box>
+      <Box args={[2, 0.1, 8]} position={[4, 0.3, -4]} rotation={[0, -Math.PI/4, 0]}><meshStandardMaterial color="#00f0ff" transparent opacity={0.2} /></Box>
+      <Box args={[2, 0.1, 8]} position={[-4, 0.3, 4]} rotation={[0, -Math.PI/4, 0]}><meshStandardMaterial color="#00f0ff" transparent opacity={0.2} /></Box>
+      <Box args={[2, 0.1, 8]} position={[4, 0.3, 4]} rotation={[0, Math.PI/4, 0]}><meshStandardMaterial color="#00f0ff" transparent opacity={0.2} /></Box>
+      <Box args={[2, 0.1, 10]} position={[0, 0.3, -7]}><meshStandardMaterial color="#00f0ff" transparent opacity={0.2} /></Box>
+      <Box args={[2, 0.1, 10]} position={[0, 0.3, 7]}><meshStandardMaterial color="#00f0ff" transparent opacity={0.2} /></Box>
+      <Box args={[8, 0.1, 2]} position={[-7, 0.3, 0]}><meshStandardMaterial color="#00f0ff" transparent opacity={0.2} /></Box>
+    </group>
+  );
+};
+
+// --- UI & MACHINERY ---
 const FloatingStatBar = ({ position, label, color, width = 1.5 }) => {
   const fillRef = useRef();
   useFrame((state) => {
@@ -172,6 +236,31 @@ const StrategyMachinery = ({ position }) => {
   );
 };
 
+const PresentationMachinery = ({ position }) => {
+  const screenRef = useRef();
+  useFrame((state) => {
+    if (screenRef.current) screenRef.current.material.opacity = 0.5 + Math.sin(state.clock.elapsedTime * 2) * 0.2;
+  });
+  return (
+    <group position={position}>
+      <mesh position={[0, 0.4, 1]}>
+        <cylinderGeometry args={[0.3, 0.4, 0.8]} />
+        <meshStandardMaterial color="#333" metalness={0.8} />
+      </mesh>
+      <mesh ref={screenRef} position={[0, 1.5, -1.5]}>
+        <boxGeometry args={[3.5, 2, 0.1]} />
+        <meshStandardMaterial color="#00f0ff" emissive="#00f0ff" emissiveIntensity={1.5} transparent opacity={0.6} />
+      </mesh>
+      <group position={[0, 1.2, 0]}>
+        <mesh rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.4, 0.4, 0.1, 16]} /><meshStandardMaterial color="#f39c12" emissive="#f39c12" emissiveIntensity={2} /></mesh>
+      </group>
+      <pointLight color="#f39c12" intensity={2} distance={5} position={[0, 1, 0]} />
+      <SecurityCamera position={[2, 1.5, -2]} />
+      <FloatingStatBar position={[0, 2.5, 0]} label="SLIDE DECK" color="#f39c12" width={2} />
+    </group>
+  );
+};
+
 const OfficeMachinery = ({ position }) => {
   return (
     <group position={position}>
@@ -263,6 +352,7 @@ const MovingBot = ({ bot }) => {
   const leftLegRef = useRef();
   const rightLegRef = useRef();
   const bodyRef = useRef();
+  
   const getTargetPos = (loc, id) => {
     let x = 0, z = 0;
     if (loc === 'comms_array') { x = -8; z = -8; }
@@ -271,19 +361,25 @@ const MovingBot = ({ bot }) => {
     if (loc === 'office') { x = 8; z = 8; }
     if (loc === 'hangar_bay') { x = 0; z = -14; }
     if (loc === 'medbay') { x = 0; z = 14; }
-    if (id === 'email_bot') x -= 2;
-    if (id === 'data_bot') z -= 2;
-    if (id === 'excel_bot') x += 2;
-    if (id === 'report_bot') z += 2;
+    if (loc === 'presentation_suite') { x = -14; z = 0; }
+    
+    if (id === 'data_bot') { x -= 2; z -= 2; }
+    if (id === 'excel_bot') { x += 2; z -= 2; }
+    if (id === 'report_bot') { x -= 2; z += 2; }
+    if (id === 'ppt_bot') { x += 2; z += 2; }
+    
     return new THREE.Vector3(x, 0.6, z);
   };
+  
   const targetPos = useRef(getTargetPos(bot.location, bot.bot_id));
   const walkTime = useRef(0);
   const isWalking = useRef(false);
+  
   useEffect(() => {
     const newTarget = getTargetPos(bot.location, bot.bot_id);
     if (!newTarget.equals(targetPos.current)) { targetPos.current = newTarget; isWalking.current = true; }
   }, [bot.location, bot.bot_id]);
+  
   useFrame((state, delta) => {
     if (!groupRef.current) return;
     const distance = groupRef.current.position.distanceTo(targetPos.current);
@@ -310,6 +406,7 @@ const MovingBot = ({ bot }) => {
       }
     }
   });
+  
   return (
     <group ref={groupRef} position={getTargetPos(bot.location, bot.bot_id)}>
       <Crewmate3D color={BOT_COLORS[bot.bot_id]} name={bot.name} status={bot.status} refs={{ leftLeg: leftLegRef, rightLeg: rightLegRef, body: bodyRef }} />
@@ -317,7 +414,6 @@ const MovingBot = ({ bot }) => {
   );
 };
 
-// --- NEW: COMBAT DRONE COMPONENT ---
 const CombatDrone = ({ position, commanderPos, bots }) => {
   const droneRef = useRef();
   const barrelRef = useRef();
@@ -345,6 +441,7 @@ const CombatDrone = ({ position, commanderPos, bots }) => {
       if (bot.location === 'office') { bx = 8; bz = 8; }
       if (bot.location === 'hangar_bay') { bx = 0; bz = -14; }
       if (bot.location === 'medbay') { bx = 0; bz = 14; }
+      if (bot.location === 'presentation_suite') { bx = -14; bz = 0; }
 
       const dx = droneRef.current.position.x - bx;
       const dz = droneRef.current.position.z - bz;
@@ -374,64 +471,28 @@ const CombatDrone = ({ position, commanderPos, bots }) => {
 
   return (
     <group ref={droneRef} position={position}>
-      <mesh>
-        <sphereGeometry args={[0.2, 16, 16]} />
-        <meshStandardMaterial color="#333" metalness={0.9} roughness={0.1} />
-      </mesh>
-      
-      <mesh position={[0, 0, 0.15]}>
-        <sphereGeometry args={[0.05]} />
-        <meshBasicMaterial color="#e74c3c" />
-      </mesh>
-
+      <mesh><sphereGeometry args={[0.2, 16, 16]} /><meshStandardMaterial color="#333" metalness={0.9} roughness={0.1} /></mesh>
+      <mesh position={[0, 0, 0.15]}><sphereGeometry args={[0.05]} /><meshBasicMaterial color="#e74c3c" /></mesh>
       <group ref={barrelRef} position={[0, 0, 0]}>
-        <mesh position={[0, 0, 0.3]}>
-          <cylinderGeometry args={[0.05, 0.05, 0.6]} rotation={[Math.PI/2, 0, 0]} />
-          <meshStandardMaterial color="#111" />
-        </mesh>
+        <mesh position={[0, 0, 0.3]}><cylinderGeometry args={[0.05, 0.05, 0.6]} rotation={[Math.PI/2, 0, 0]} /><meshStandardMaterial color="#111" /></mesh>
       </group>
-
-      <mesh ref={laserRef} position={[0, 0, 0]} visible={false}>
-        <boxGeometry args={[0.05, 0.05, 1]} />
-        <meshBasicMaterial color="#ff0000" transparent opacity={0.8} />
-      </mesh>
-
+      <mesh ref={laserRef} position={[0, 0, 0]} visible={false}><boxGeometry args={[0.05, 0.05, 1]} /><meshBasicMaterial color="#ff0000" transparent opacity={0.8} /></mesh>
       <pointLight color="#e74c3c" intensity={1} distance={2} />
     </group>
   );
 };
 
-// --- THE COMMANDER (COMBAT READY) ---
-const Commander = ({ activeRoom, setActiveRoom, isPaused, commanderPos }) => {
+// --- THE COMMANDER (WASD ONLY) ---
+const Commander = ({ activeRoom, setActiveRoom, isPaused, commanderPos, allBots }) => {
   const ref = useRef();
   const platformRef = useRef();
   const keys = useRef({});
   const scanRef = useRef();
   const scanTime = useRef(0);
-  const targetPos = useRef(null);
   
   const [turrets, setTurrets] = useState([]);
   const shieldRef = useRef();
   const shieldTime = useRef(0);
-
-  const { camera, gl } = useThree();
-  const raycaster = new THREE.Raycaster();
-  const mouse = new THREE.Vector2();
-
-  useEffect(() => {
-    const handleClick = (event) => {
-      mouse.x = (event.clientX / gl.domElement.clientWidth) * 2 - 1;
-      mouse.y = -(event.clientY / gl.domElement.clientHeight) * 2 + 1;
-      raycaster.setFromCamera(mouse, camera);
-      const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-      const intersection = new THREE.Vector3();
-      if (raycaster.ray.intersectPlane(plane, intersection)) {
-        targetPos.current = new THREE.Vector3(intersection.x, 0.6, intersection.z);
-      }
-    };
-    gl.domElement.addEventListener('click', handleClick);
-    return () => gl.domElement.removeEventListener('click', handleClick);
-  }, [camera, gl]);
 
   useEffect(() => {
     const down = (e) => {
@@ -476,20 +537,11 @@ const Commander = ({ activeRoom, setActiveRoom, isPaused, commanderPos }) => {
     const isBoosting = keys.current['shift'];
     const speed = (isBoosting ? 10 : 5) * delta;
 
-    let isMoving = false;
-    if (keys.current['w'] || keys.current['arrowup']) { ref.current.position.z -= speed; isMoving = true; }
-    if (keys.current['s'] || keys.current['arrowdown']) { ref.current.position.z += speed; isMoving = true; }
-    if (keys.current['a'] || keys.current['arrowleft']) { ref.current.position.x -= speed; isMoving = true; }
-    if (keys.current['d'] || keys.current['arrowright']) { ref.current.position.x += speed; isMoving = true; }
-
-    if (!isMoving && targetPos.current) {
-      const dist = ref.current.position.distanceTo(targetPos.current);
-      if (dist > 0.1) {
-        ref.current.position.lerp(targetPos.current, 5 * delta);
-      } else {
-        targetPos.current = null;
-      }
-    }
+    // Pure WASD Movement
+    if (keys.current['w'] || keys.current['arrowup']) ref.current.position.z -= speed;
+    if (keys.current['s'] || keys.current['arrowdown']) ref.current.position.z += speed;
+    if (keys.current['a'] || keys.current['arrowleft']) ref.current.position.x -= speed;
+    if (keys.current['d'] || keys.current['arrowright']) ref.current.position.x += speed;
 
     commanderPos.current = { x: ref.current.position.x, z: ref.current.position.z };
 
@@ -558,7 +610,7 @@ const Commander = ({ activeRoom, setActiveRoom, isPaused, commanderPos }) => {
       </group>
 
       {turrets.map(turret => (
-        <CombatDrone key={turret.id} position={turret.pos} commanderPos={commanderPos.current} bots={Object.values(commanderPos.current.bots || {})} />
+        <CombatDrone key={turret.id} position={turret.pos} commanderPos={commanderPos.current} bots={allBots} />
       ))}
     </>
   );
@@ -581,7 +633,10 @@ const Minimap = ({ bots, commanderPos }) => {
           <div className="map-room map-office" title="Office"></div>
           <div className="map-room map-hangar" title="Hangar"></div>
           <div className="map-room map-medbay" title="MedBay"></div>
+          <div className="map-room map-presentation" title="Presentation"></div>
+          
           <div className="map-dot commander-dot" style={{ left: `calc(50% + ${commanderPos.current.x * 3}%)`, top: `calc(50% + ${commanderPos.current.z * 3}%)` }} />
+          
           {Object.values(bots).map(bot => {
             let x = 0, z = 0;
             if (bot.location === 'comms_array') { x = -8; z = -8; }
@@ -590,10 +645,13 @@ const Minimap = ({ bots, commanderPos }) => {
             if (bot.location === 'office') { x = 8; z = 8; }
             if (bot.location === 'hangar_bay') { x = 0; z = -14; }
             if (bot.location === 'medbay') { x = 0; z = 14; }
-            if (bot.bot_id === 'email_bot') x -= 2;
-            if (bot.bot_id === 'data_bot') z -= 2;
-            if (bot.bot_id === 'excel_bot') x += 2;
-            if (bot.bot_id === 'report_bot') z += 2;
+            if (bot.location === 'presentation_suite') { x = -14; z = 0; }
+            
+            if (bot.bot_id === 'data_bot') { x -= 2; z -= 2; }
+            if (bot.bot_id === 'excel_bot') { x += 2; z -= 2; }
+            if (bot.bot_id === 'report_bot') { x -= 2; z += 2; }
+            if (bot.bot_id === 'ppt_bot') { x += 2; z += 2; }
+            
             return <div key={bot.bot_id} className="map-dot bot-dot" style={{ left: `calc(50% + ${x * 3}%)`, top: `calc(50% + ${z * 3}%)`, backgroundColor: BOT_COLORS[bot.bot_id], boxShadow: `0 0 8px ${BOT_COLORS[bot.bot_id]}` }} />;
           })}
         </div>
@@ -626,11 +684,13 @@ export default function App() {
       const msg = JSON.parse(event.data);
       if (msg.type === 'SNAPSHOT') {
         const newBots = {};
-        msg.bots.forEach(b => newBots[b.bot_id] = b);
+        msg.bots.forEach(b => { if(b.bot_id !== 'email_bot') newBots[b.bot_id] = b; });
         setBots(newBots);
         setApprovals(msg.approvals);
       } 
-      else if (msg.type === 'BOT_STATUS') setBots(prev => ({ ...prev, [msg.bot_id]: msg }));
+      else if (msg.type === 'BOT_STATUS') {
+        if (msg.bot_id !== 'email_bot') setBots(prev => ({ ...prev, [msg.bot_id]: msg }));
+      }
       else if (msg.type === 'APPROVAL_REQUEST') setApprovals(prev => [...prev, msg]);
       else if (msg.type === 'APPROVAL_RESOLVED') setApprovals(prev => prev.filter(a => a.task_id !== msg.task_id));
     };
@@ -644,13 +704,18 @@ export default function App() {
     <div className="app-container">
       <div className="canvas-container">
         <Suspense fallback={<div style={{color: 'white', position: 'absolute', top: '50%', left: '50%'}}>Loading Ship...</div>}>
-          <Canvas camera={{ position: [0, 22, 26], fov: 40 }} shadows>
+          <Canvas camera={{ position: [0, 25, 30], fov: 40 }} shadows>
             <color attach="background" args={['#02040a']} />
-            <ambientLight intensity={0.3} />
-            <directionalLight position={[10, 20, 10]} intensity={1} castShadow shadow-mapSize={[2048, 2048]} />
+            <ambientLight intensity={0.2} />
+            <directionalLight position={[10, 20, 10]} intensity={0.8} castShadow shadow-mapSize={[2048, 2048]} />
+            
             <WarpStars />
-            <Grid position={[0, -1, 0]} args={[60, 60]} cellSize={1} cellThickness={0.5} cellColor="#00f0ff" sectionSize={5} sectionThickness={1} sectionColor="#00f0ff" fadeDistance={30} fadeStrength={1} />
-            <OrbitControls makeDefault maxPolarAngle={Math.PI / 2.5} minPolarAngle={Math.PI / 4} minDistance={10} maxDistance={50} enablePan={true} />
+            <BackgroundPlanet />
+            <ShipHull />
+            <EngineThrusters />
+
+            <OrbitControls makeDefault maxPolarAngle={Math.PI / 2.5} minPolarAngle={Math.PI / 4} minDistance={10} maxDistance={60} enablePan={true} />
+            
             {!openRoom && activeRoom && Object.entries(ROOM_POSITIONS).filter(([id]) => id === activeRoom).map(([id, room]) => (
               <Html key={id} position={[room.x, 3.5, room.z]} center>
                 <div style={{ background: 'rgba(46, 204, 113, 0.9)', border: '1px solid #fff', padding: '4px 8px', borderRadius: '4px', color: '#fff', fontFamily: 'Orbitron', fontSize: '10px', whiteSpace: 'nowrap', boxShadow: '0 0 15px #2ecc71', cursor: 'pointer' }} onClick={() => setOpenRoom(id)}>
@@ -658,13 +723,19 @@ export default function App() {
                 </div>
               </Html>
             ))}
+
             <Room position={[0, 0, 0]} size={[8, 1, 6]} color={ROOM_COLORS.bridge} label="Bridge (HQ)"><CommandTable position={[0, 0, 0]} /></Room>
             <Room position={[-8, 0, -8]} size={[5, 1, 5]} color={ROOM_COLORS.comms_array} label="Comms Array"><CommsMachinery position={[0, 0, 0]} /></Room>
             <Room position={[8, 0, -8]} size={[5, 1, 5]} color={ROOM_COLORS.data_forge} label="Data Forge"><DataForgeCore position={[0, 1, 0]} /></Room>
             <Room position={[-8, 0, 8]} size={[5, 1, 5]} color={ROOM_COLORS.strategy_deck} label="Strategy Deck"><StrategyMachinery position={[0, 0, 0]} /></Room>
-            <Room position={[8, 0, 8]} size={[5, 1, 5]} color={ROOM_COLORS.office} label="Commander's Office"><OfficeMachinery position={[0, 0, -1]} /><Commander activeRoom={activeRoom} setActiveRoom={setActiveRoom} isPaused={!!openRoom} commanderPos={commanderPos} /></Room>
+            <Room position={[8, 0, 8]} size={[5, 1, 5]} color={ROOM_COLORS.office} label="Commander's Office"><OfficeMachinery position={[0, 0, -1]} /><Commander activeRoom={activeRoom} setActiveRoom={setActiveRoom} isPaused={!!openRoom} commanderPos={commanderPos} allBots={Object.values(bots)} /></Room>
             <Room position={[0, 0, -14]} size={[6, 1, 5]} color={ROOM_COLORS.hangar_bay} label="Hangar Bay"><HangarMachinery position={[0, 0, 0]} /></Room>
             <Room position={[0, 0, 14]} size={[6, 1, 5]} color={ROOM_COLORS.medbay} label="MedBay"><MedbayMachinery position={[0, 0, 0]} /></Room>
+            
+            <Room position={[-14, 0, 0]} size={[5, 1, 5]} color={ROOM_COLORS.presentation_suite} label="Presentation Suite">
+              <PresentationMachinery position={[0, 0, 0]} />
+            </Room>
+
             {Object.values(bots).map((bot) => <MovingBot key={bot.bot_id} bot={bot} />)}
             <EffectComposer><Bloom luminanceThreshold={0.5} mipmapBlur intensity={1.5} /></EffectComposer>
           </Canvas>
@@ -704,7 +775,7 @@ export default function App() {
           <div>
             <h4>Agent Status</h4>
             <div className="bot-matrix">
-              {['email_bot', 'data_bot', 'excel_bot', 'report_bot'].map(id => {
+              {['data_bot', 'excel_bot', 'report_bot', 'ppt_bot'].map(id => {
                 const bot = bots[id] || { status: 'offline' };
                 return (
                   <div key={id} className="bot-row">
@@ -722,13 +793,13 @@ export default function App() {
               <button onClick={() => sendMessage({ type: "START_TASK", bot_id: 'data_bot' })}><span>▶ RUN DATA FORGE</span></button>
               <button onClick={() => sendMessage({ type: "START_TASK", bot_id: 'excel_bot' })}><span>▶ BUILD EXCEL</span></button>
               <button onClick={() => sendMessage({ type: "START_TASK", bot_id: 'report_bot' })}><span>▶ GENERATE REPORT</span></button>
+              <button onClick={() => sendMessage({ type: "START_TASK", bot_id: 'ppt_bot' })}><span>▶ GENERATE PPTX</span></button>
             </div>
           </div>
           <div>
             <h4>Commander Controls</h4>
             <div className="button-group" style={{ fontSize: '10px', color: '#8892b0', lineHeight: '1.6' }}>
-              <div>🖱️ <strong>Click Grid:</strong> Walk to location</div>
-              <div>⌨️ <strong>WASD:</strong> Move manually</div>
+              <div>⌨️ <strong>WASD/Arrows:</strong> Move Commander</div>
               <div>⚡ <strong>Hold Shift:</strong> Overclock Speed</div>
               <div>🔵 <strong>Spacebar:</strong> Tactical Scan</div>
               <div>🛡️ <strong>F Key:</strong> Activate Energy Shield</div>
@@ -745,12 +816,13 @@ export default function App() {
             <p>Terminal Access Granted. Welcome, Commander.</p>
             <div className="terminal-data">
               {openRoom === 'data_forge' && <p>Analyzing CSV... 200 rows processed.</p>}
-              {openRoom === 'comms_array' && <p>Inbox: 4 unread messages.</p>}
+              {openRoom === 'comms_array' && <p>Comms Array offline for maintenance.</p>}
               {openRoom === 'strategy_deck' && <p>Active reports: 2.</p>}
               {openRoom === 'bridge' && <p>Ship status: All systems nominal.</p>}
               {openRoom === 'office' && <p>Commander's personal logs.</p>}
               {openRoom === 'hangar_bay' && <p>Shuttle is fueled and ready.</p>}
               {openRoom === 'medbay' && <p>All crew vitals are normal.</p>}
+              {openRoom === 'presentation_suite' && <p>PowerPoint presentation suite ready.</p>}
             </div>
             <button className="close-btn" onClick={() => setOpenRoom(null)}>CLOSE TERMINAL [ESC]</button>
           </div>
